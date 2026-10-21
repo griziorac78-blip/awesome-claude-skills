@@ -27,6 +27,7 @@ Do not use it for questions with a single factual answer, or for trivial choices
 5. **Holds the final duel**: the last two ideas go head to head
 6. **Fuses the super idea**: champion + best loot, then a pre-mortem stress test
 7. **Delivers a verdict**: one clear recommendation, why it won, its risks, and the first concrete steps
+8. **Shows it all visually**: live progress bars in the chat while it thinks, then an animated visual report (loading battle animation, fighter cards, score bars, eliminations, final duel, trophy reveal, charts)
 
 ## How to Use
 
@@ -49,12 +50,29 @@ Options can be appended to the command or stated in plain words:
 | `--fighters N` | Number of fighters (3 to 10, default 6) |
 | `--quick` | 4 fighters, 1 elimination round, short log. For smaller decisions |
 | `--deep` | 8 fighters, an extra evolution round, and — when a subagent tool (Agent/Task) is available — each fighter runs as its own parallel subagent so the ideas are truly independent |
-| `--silent` | Show only the final verdict, not the fight log |
+| `--silent` | Show only the final verdict, not the fight log (the visual report is still produced) |
+| `--text` | No visual report: plain text output only |
 | `--criteria "a, b, c"` | Use the user's own scoring criteria instead of inferring them |
 
 ## The Tournament
 
 Follow these phases in order. Think autonomously: do not stop to ask the user questions mid-fight. If the problem is ambiguous, state the assumption you are making in Phase 0 and carry on. Only ask before starting if the problem is so vague that any answer would be a guess (for example, `/battle-royale` with no topic).
+
+### Live progress (the loading animation in the chat)
+
+The user should never stare at a silent screen. As soon as the request arrives, and before any long thinking, post a one-line progress header, then update it at the start of every phase. Use this exact style (10-slot bar, filled proportionally to the phase number out of 7):
+
+```
+⚔️ Battle Royale — Phase 1/7 · The Arena ▰▱▱▱▱▱▱▱▱▱
+🪂 Phase 2/7 · The Drop — 6 fighters land… ▰▰▰▱▱▱▱▱▱▱
+💥 Phase 3/7 · The Attack — red team striking… ▰▰▰▰▱▱▱▱▱▱
+💰 Phase 4/7 · The Looting… ▰▰▰▰▰▰▱▱▱▱
+🥊 Phase 5/7 · Final Duel… ▰▰▰▰▰▰▰▱▱▱
+🔥 Phase 6/7 · Forging the super idea… ▰▰▰▰▰▰▰▰▰▱
+🏆 Phase 7/7 · Verdict ▰▰▰▰▰▰▰▰▰▰
+```
+
+Each progress line may carry one short teaser (for example "🪂 Phase 2/7 · The Drop — Pragmatist, Visionary, Contrarian… are in"), but no long text: the detail goes into the visual report. Translate the labels into the user's language.
 
 ### Phase 0 — The Arena
 
@@ -139,9 +157,37 @@ Finally, score the super idea on the rubric. It should beat the champion; if it 
 
 Present the result to the user. Reply in the user's language.
 
+## Visual Report
+
+Unless `--text` is set, finish with an animated visual report built from the template `assets/arena.html` in this skill's folder. It opens on a loading screen (two fencers clashing, a progress bar walking through the phases, a Skip button), then reveals the whole tournament with animations: fighters dropping in, red "OUT" stamps on the eliminated, score bars filling up, the VS duel, a trophy and confetti for the super idea, a score-by-criterion chart, the final ranking, the pre-mortem and the first moves. It works on phones, in light and dark mode, and has a "Replay the battle" button.
+
+How to build it:
+
+1. Read `assets/arena.html` from this skill's folder.
+2. Replace **only** the JSON inside `<script id="battle-data" type="application/json">` with this tournament's data. Keep every other line of the file unchanged.
+3. Set `"lang"` to the user's language code (`"fr"` and `"en"` have built-in interface labels; other languages fall back to English labels). Write all the content in the user's language.
+4. Output the complete file as an HTML artifact (on claude.ai and the Claude apps). In Claude Code or any environment without artifacts, write it to `battle-royale-<short-slug>.html` in the working directory and give the user the path.
+
+The JSON schema (the template contains a complete example):
+
+| Field | Content |
+|---|---|
+| `lang`, `title`, `problem` | Strings |
+| `constraints` | Array of strings |
+| `rubric` | `[{name, weight}]` |
+| `fighters` | `[{archetype, emoji, idea, pitch, strike, rebuttal, score, scoreV2?, eliminated, lossReason?, loot?}]` — `eliminated` is the round number it fell in, or `null` for survivors; `scoreV2` is the score after looting |
+| `looting` | `[{to, from, loot, result}]` |
+| `duel` | `{a, scoreA, b, scoreB, champion, reason}` |
+| `superIdea` | `{name, oneLiner, howItWorks[], whyWon, scores:[{name, value, champion}], score, championScore, premortem:[{risk, safeguard}], firstMoves:[{when, what}]}` |
+| `runnerUp` | `{name, when}` |
+
+The JSON must be valid: escape double quotes inside strings, no trailing commas, no comments. Scores are numbers out of 10.
+
 ## Output Format
 
-Unless `--silent` is set, show the fight log compactly, then the verdict. Keep the log scannable: tables and one-liners, not essays.
+Order in the chat: the live progress lines, then the text log below (skipped with `--silent`), then the visual report. When the visual report is produced, keep the text log short: it is the backup, the report is the show.
+
+Keep the log scannable: tables and one-liners, not essays.
 
 ```markdown
 # Idea Battle Royale: [problem in a few words]
@@ -250,6 +296,7 @@ Newsletter v2 (8.1) vs Reddit (6.9) — **Champion: Newsletter v2**, because it 
 
 ## Tips
 
+- On a phone, the visual report is the easiest way to read the result: tap Skip to jump past the loading animation, and Replay to watch the battle again
 - Give constraints up front ("solo", "no budget", "must ship in 2 weeks") — they make the judging sharper
 - Use `--criteria` when you know what matters most to you; the default rubric is generic
 - Use `--deep` for big decisions; the independent subagent fighters produce noticeably more diverse ideas
