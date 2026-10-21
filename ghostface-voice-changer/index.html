@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ghostface Voice</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ghostface">
+<meta name="theme-color" content="#0b0b0e">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -21,6 +26,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; background: var(--ink); color: var(--bone); }
 body { font: 16px/1.5 var(--body); }
 main {
@@ -141,12 +147,12 @@ a { color: var(--bone); }
       <label for="inDev">Micro (ta vraie voix)</label>
       <select id="inDev"><option value="">Micro par défaut</option></select>
     </div>
-    <div class="field">
+    <div class="field" id="outField">
       <label for="outDev">Sortie vers l'appel</label>
       <select id="outDev"><option value="">Désactivée</option></select>
       <small>Choisis <code>CABLE Input</code> (Windows) ou <code>BlackHole 2ch</code> (Mac). Voir le guide plus bas.</small>
     </div>
-    <label class="check"><input id="monitor" type="checkbox"> M'entendre dans le casque</label>
+    <label class="check"><input id="monitor" type="checkbox"> <span id="monitorLabel">M'entendre dans le casque</span></label>
   </fieldset>
 
   <section>
@@ -162,7 +168,7 @@ a { color: var(--bone); }
     <div class="tabs" role="tablist">
       <button role="tab" aria-selected="true" data-t="win">PC Windows</button>
       <button role="tab" aria-selected="false" data-t="mac">Mac</button>
-      <button role="tab" aria-selected="false" data-t="tel">Téléphone seul</button>
+      <button role="tab" aria-selected="false" data-t="tel">iPhone</button>
     </div>
     <div class="panel" data-panel="win">
       <ol>
@@ -190,12 +196,14 @@ a { color: var(--bone); }
       </ol>
     </div>
     <div class="panel" data-panel="tel" hidden>
-      <p>iPhone et Android ne laissent aucune appli injecter du son dans un appel d'une autre appli (Snap, Insta, WhatsApp, Téléphone), sauf téléphone rooté ou jailbreaké. Les « voice changers » des stores ne font que des enregistrements.</p>
-      <p>Tu as deux solutions :</p>
+      <p><b>Sur iPhone, l'appli marche dans Safari</b> : ouvre son lien https, touche « Activer la voix », autorise le micro, puis coche « Jouer la voix ». Pour l'avoir comme une appli : bouton Partager › <b>Sur l'écran d'accueil</b>. Garde la page ouverte et l'écran allumé : iOS coupe le son quand Safari passe en arrière-plan.</p>
+      <p>Par contre, Apple interdit à toute appli (même de l'App Store) de modifier le son d'un appel passé dans Snap, Insta, WhatsApp ou Téléphone, sur le même iPhone. Pour appeler avec la voix, il faut donc un 2ᵉ appareil :</p>
       <ol>
-        <li><b>Le mieux</b> : passe l'appel depuis un PC ou un Mac (onglets à côté). Pour un appel téléphonique normal, Lien avec Windows ou la Continuité du Mac font passer l'appel du téléphone par l'ordinateur.</li>
-        <li><b>Astuce rapide</b> : ouvre cette page sur un 2ᵉ appareil, coche « M'entendre », et colle son haut-parleur contre le micro du téléphone en appel (ou relie-les avec un câble jack TRRS). La qualité est moins bonne.</li>
+        <li><b>Avec un Mac</b> (le meilleur son) : l'appel de l'iPhone passe par le Mac grâce à la Continuité. Suis l'onglet « Mac ».</li>
+        <li><b>Avec un 2ᵉ iPhone, iPad ou téléphone</b> : ouvre la page dessus, coche « Jouer la voix » et parle dans ses écouteurs filaires (leur micro). Mets l'écouteur ou le haut-parleur contre le micro de l'iPhone qui appelle (en bas, à côté du port). Monte le volume, baisse « Écho ».</li>
+        <li><b>Avec un PC</b> : passe l'appel depuis le PC (onglet « PC Windows »).</li>
       </ol>
+    </div>
     </div>
     <p class="note">Pour les blagues entre potes. Faire peur à quelqu'un pour de vrai, menacer ou harceler, c'est puni par la loi.</p>
   </section>
@@ -261,6 +269,10 @@ const PRESETS = {
   robot: { pitch: 0.8, drive: 0.2, ring: 0.65, verb: 0.1, phone: false }
 };
 const S = { ...PRESETS.ghost, gate: 0.012, vol: 1 };
+// Safari iOS ne sait pas choisir la sortie audio : la voix sort alors par le haut-parleur ou les écouteurs.
+const CAN_SINK = typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype;
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let wakeLock = null;
 const $ = id => document.getElementById(id);
 let ctx, stream, n = null, outEl = null, running = false;
 
@@ -331,8 +343,7 @@ function build() {
   n.master.connect(n.dest);
   n.master.connect(n.monitor).connect(ctx.destination);
 
-  outEl = new Audio();
-  outEl.srcObject = n.dest.stream;
+  if (CAN_SINK) { outEl = new Audio(); outEl.srcObject = n.dest.stream; }
   apply();
 }
 
@@ -393,7 +404,7 @@ async function listDevices() {
 }
 
 async function setOutput() {
-  if (!outEl) return;
+  if (!outEl || !CAN_SINK) return;
   const id = $('outDev').value;
   if (!id) { outEl.pause(); return; }
   if (typeof outEl.setSinkId !== 'function') {
@@ -409,8 +420,11 @@ async function setOutput() {
 
 async function start() {
   try {
-    if (!navigator.mediaDevices || !window.AudioWorkletNode) throw new Error('Navigateur non compatible. Utilise Chrome ou Edge récent.');
-    ctx = new AudioContext({ latencyHint: 'interactive' });
+    if (!window.isSecureContext) throw new Error('Le micro ne marche que sur un lien https:// (ou en local sur ordinateur). Ouvre la version en ligne.');
+    if (!navigator.mediaDevices || !window.AudioWorkletNode) throw new Error(IS_IOS ? 'Mets à jour iOS (14.5 minimum) et utilise Safari.' : 'Navigateur non compatible. Utilise Chrome, Edge ou Safari récent.');
+    try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) {}
+    ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+    ctx.resume();
     // Un fichier ouvert en local (file://) refuse les blob:, d'où le repli en data:.
     try {
       await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET], { type: 'application/javascript' })));
@@ -424,7 +438,9 @@ async function start() {
     $('toggle').textContent = 'Couper la voix';
     $('toggle').setAttribute('aria-pressed', 'true');
     $('rec').disabled = false;
-    if (!$('outDev').value) status('Micro actif. Choisis une sortie vers l\'appel, ou coche « M\'entendre » pour tester.');
+    try { wakeLock = await navigator.wakeLock?.request('screen'); } catch (e) {}
+    if (!CAN_SINK) status('Micro actif. Coche « Jouer la voix » (avec des écouteurs, sinon ça siffle).');
+    else if (!$('outDev').value) status('Micro actif. Choisis une sortie vers l\'appel, ou coche « M\'entendre » pour tester.');
     else await setOutput();
     draw();
   } catch (e) {
@@ -438,6 +454,8 @@ function stop() {
   if (stream) stream.getTracks().forEach(t => t.stop());
   if (outEl) outEl.pause();
   if (ctx) ctx.close();
+  if (wakeLock) wakeLock.release().catch(() => {});
+  wakeLock = null;
   ctx = null; n = null; stream = null; outEl = null;
   $('toggle').textContent = 'Activer la voix';
   $('toggle').setAttribute('aria-pressed', 'false');
@@ -507,9 +525,19 @@ document.querySelector('.tabs').onclick = e => {
   document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', String(x === b)));
   document.querySelectorAll('.panel').forEach(p => { p.hidden = p.dataset.panel !== b.dataset.t; });
 };
-if (/Mac/.test(navigator.platform)) document.querySelector('.tabs [data-t=mac]').click();
-else if (/Android|iPhone|iPad/.test(navigator.userAgent)) document.querySelector('.tabs [data-t=tel]').click();
+if (IS_IOS || /Android/.test(navigator.userAgent)) document.querySelector('.tabs [data-t=tel]').click();
+else if (/Mac/.test(navigator.platform)) document.querySelector('.tabs [data-t=mac]').click();
 
+if (!CAN_SINK) {
+  $('outField').hidden = true;
+  $('monitorLabel').textContent = 'Jouer la voix (écouteurs conseillés)';
+}
+// Au retour au premier plan (iOS met l'audio en pause), on relance.
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible' || !running || !ctx) return;
+  if (ctx.state !== 'running') ctx.resume().catch(() => {});
+  if (!wakeLock || wakeLock.released) { try { wakeLock = await navigator.wakeLock?.request('screen'); } catch (e) {} }
+});
 load(); apply();
 </script>
 </body>
