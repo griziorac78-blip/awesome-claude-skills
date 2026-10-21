@@ -1,0 +1,9 @@
+{
+  "id": "semver",
+  "description": "A semantic version MAJOR.MINOR.PATCH: three non-negative integers separated by dots, without leading zeros (a single 0 is allowed), optionally followed by '-' and a pre-release label made of one or more dot-separated identifiers, each identifier being one or more ASCII letters, digits or hyphens. No build metadata ('+...') and nothing else may appear.",
+  "flags": [],
+  "train_size": {"positive": 6, "negative": 7},
+  "threshold": 0.95,
+  "positive": ["1.0.0", "0.1.2", "10.20.30", "1.2.3-alpha", "1.2.3-alpha.1", "2.0.0-rc.1", "0.0.0", "1.0.0-0.3.7", "1.0.0-x-y-z", "99.99.99", "3.14.159", "1.0.0-beta.11", "4.5.6-SNAPSHOT", "12.0.1-build.2.b", "7.8.9-a", "100.0.0-RC-1"],
+  "negative": ["1.0", "1.0.0.0", "01.0.0", "1.02.0", "1.0.00", "v1.0.0", "1.0.0-", "1.0.0-alpha..1", "1.0.0+build", "-1.0.0", "1..0", "a.b.c", "1.0.0-al_pha", " 1.0.0", "1.0.0-.alpha", "1.0.0-alpha.", "1.0.0 beta"]
+}

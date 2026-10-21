@@ -1,0 +1,9 @@
+{
+  "id": "ipv4",
+  "description": "An IPv4 address in dotted-decimal form: exactly four decimal numbers from 0 to 255 separated by single dots, without leading zeros (a single 0 is allowed). Nothing else may appear in the string.",
+  "flags": [],
+  "train_size": {"positive": 6, "negative": 7},
+  "threshold": 0.95,
+  "positive": ["0.0.0.0", "255.255.255.255", "192.168.1.1", "10.0.0.1", "172.16.254.3", "8.8.8.8", "1.2.3.4", "127.0.0.1", "100.200.250.199", "249.5.10.99", "203.0.113.42", "99.1.0.255", "198.51.100.7", "64.233.160.0", "250.251.252.253", "20.30.40.50"],
+  "negative": ["256.0.0.1", "1.2.3", "1.2.3.4.5", "01.2.3.4", "1.2.3.04", "192.168.1.256", "1.2.3.-1", "a.b.c.d", "1..2.3", "300.1.1.1", "1.2.3.4.", ".1.2.3", "1.2.3.999", "192.168.001.1", " 1.2.3.4", "260.1.1.1", "1.2.3.4 "]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "hex_color",
+  "description": "A CSS hexadecimal color: a '#' followed by exactly 3 or exactly 6 hexadecimal digits (0-9, a-f, A-F; upper and lower case may be mixed). Nothing else may appear in the string.",
+  "flags": [],
+  "train_size": {"positive": 6, "negative": 7},
+  "threshold": 0.95,
+  "positive": ["#fff", "#FFF", "#000000", "#1a2B3c", "#abc", "#A0B", "#123456", "#ffffff", "#9f9", "#00ff00", "#DeadBe", "#c0c0c0", "#0F0", "#7a7", "#BADA55", "#e5e5e5", "#3C9", "#f0E1d2"],
+  "negative": ["fff", "#ffff", "#fffff", "#fffffff", "#ggg", "#12345g", "##fff", "#12 34", "# fff", "#", "#1234", "#ab", "rgb(0,0,0)", "#ABCDEFG", "#-12", "#0x0f0", "#fff ", "#Zz9"]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "iso_date",
+  "description": "A calendar date written YYYY-MM-DD: a four-digit year from 1900 to 2099, a two-digit month 01-12 and a two-digit day 01-31, separated by hyphens. Day and month combinations are not validated further (2024-02-30 is accepted). Nothing else may appear in the string.",
+  "flags": [],
+  "train_size": {"positive": 6, "negative": 7},
+  "threshold": 0.95,
+  "positive": ["1999-12-31", "2024-02-29", "1900-01-01", "2099-12-31", "2000-06-15", "2023-10-05", "1985-07-04", "2010-11-30", "2031-03-01", "1950-09-09", "2001-01-31", "2015-12-01", "1999-02-28", "2048-08-18", "1977-05-23", "2020-04-30", "1904-10-10", "2088-02-30"],
+  "negative": ["2024-13-01", "2024-00-10", "2024-1-01", "24-01-01", "2024/01/01", "1899-12-31", "2100-01-01", "2024-01-32", "2024-01-00", "2024-01-1", " 2024-01-01", "2024-01-01 ", "20240101", "2024-01-01T10:00", "abcd-ef-gh", "2024-02-3a", "2024-01-40", "3024-01-01"]
+}
