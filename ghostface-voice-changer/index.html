@@ -75,6 +75,20 @@ legend { font: 400 1.1rem var(--display); padding: 0 6px; }
 .field small { color: var(--ash); }
 select { font: 400 .95rem var(--body); padding: 10px; border-radius: 6px; background: var(--ink); color: var(--bone); border: 1px solid var(--seam); width: 100%; min-width: 0; }
 
+.call { display: grid; gap: 14px; }
+.call .dial { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+.call input[type=tel], .call input[type=url], .call input[type=password] {
+  font: 400 1rem var(--body); padding: 12px; border-radius: 6px; width: 100%; min-width: 0;
+  background: var(--ink); color: var(--bone); border: 1px solid var(--seam);
+}
+.call input[type=tel] { font: 500 1.25rem var(--mono); letter-spacing: .04em; }
+#callBtn { font: 600 1rem var(--body); padding: 12px 20px; border-radius: 6px; cursor: pointer; border: 1px solid var(--bone); background: var(--bone); color: var(--ink); }
+#callBtn.hang { background: var(--blood); border-color: var(--blood); color: var(--bone); }
+#callBtn:disabled { opacity: .5; cursor: default; }
+#callStatus { font: 500 .85rem var(--mono); color: var(--ash); min-height: 1.3em; font-variant-numeric: tabular-nums; }
+#callStatus.err { color: #ff8a8f; }
+details summary { cursor: pointer; color: var(--ash); }
+details[open] summary { margin-bottom: 12px; }
 .test { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .test button { font: 500 .95rem var(--body); padding: 10px 16px; border-radius: 6px; cursor: pointer; background: transparent; color: var(--bone); border: 1px solid var(--bone); }
 .test button:disabled { opacity: .4; cursor: default; }
@@ -154,6 +168,28 @@ a { color: var(--bone); }
     </div>
     <label class="check"><input id="monitor" type="checkbox"> <span id="monitorLabel">M'entendre dans le casque</span></label>
   </fieldset>
+
+  <section class="call" aria-label="Appeler">
+    <h2>Appeler avec la voix</h2>
+    <p class="note">Appel téléphonique normal passé par internet (Twilio), depuis l'iPhone seul. La personne voit ton numéro Twilio, pas le tien.</p>
+    <div class="dial">
+      <input id="callNum" type="tel" inputmode="tel" autocomplete="off" placeholder="06 12 34 56 78" aria-label="Numéro à appeler">
+      <button id="callBtn">Appeler</button>
+    </div>
+    <div id="callStatus" role="status"></div>
+    <details id="svcBox">
+      <summary>Réglages du service d'appel</summary>
+      <div class="field">
+        <label for="svc">Adresse du service Twilio</label>
+        <input id="svc" type="url" inputmode="url" autocomplete="off" placeholder="https://ghostface-1234.twil.io">
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label for="pin">Code PIN</label>
+        <input id="pin" type="password" autocomplete="off">
+        <small>Le code que tu as mis dans APP_PIN chez Twilio. Il reste enregistré sur cet appareil.</small>
+      </div>
+    </details>
+  </section>
 
   <section>
     <h2>Tester</h2>
@@ -276,6 +312,7 @@ let wakeLock = null;
 const $ = id => document.getElementById(id);
 let ctx, stream, n = null, outEl = null, running = false;
 
+let call = null;
 function load() {
   try { Object.assign(S, JSON.parse(localStorage.getItem('ghostface') || '{}')); } catch (e) {}
 }
@@ -418,13 +455,16 @@ async function setOutput() {
   } catch (e) { status('Impossible d\'utiliser cette sortie : ' + e.message, true); }
 }
 
-async function start() {
-  try {
-    if (!window.isSecureContext) throw new Error('Le micro ne marche que sur un lien https:// (ou en local sur ordinateur). Ouvre la version en ligne.');
-    if (!navigator.mediaDevices || !window.AudioWorkletNode) throw new Error(IS_IOS ? 'Mets à jour iOS (14.5 minimum) et utilise Safari.' : 'Navigateur non compatible. Utilise Chrome, Edge ou Safari récent.');
-    try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) {}
-    ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
-    ctx.resume();
+// Crée le moteur audio (sans micro). À appeler au début d'un geste (toucher) pour iOS.
+let engineReady = null;
+function ensureEngine() {
+  if (engineReady) return engineReady;
+  if (!window.isSecureContext) return Promise.reject(new Error('Le micro ne marche que sur un lien https:// (ou en local sur ordinateur). Ouvre la version en ligne.'));
+  if (!navigator.mediaDevices || !window.AudioWorkletNode) return Promise.reject(new Error(IS_IOS ? 'Mets à jour iOS (14.5 minimum) et utilise Safari.' : 'Navigateur non compatible. Utilise Chrome, Edge ou Safari récent.'));
+  try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) {}
+  ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+  ctx.resume();
+  engineReady = (async () => {
     // Un fichier ouvert en local (file://) refuse les blob:, d'où le repli en data:.
     try {
       await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET], { type: 'application/javascript' })));
@@ -432,6 +472,17 @@ async function start() {
       await ctx.audioWorklet.addModule('data:application/javascript;charset=utf-8,' + encodeURIComponent(WORKLET));
     }
     build();
+    requestAnimationFrame(draw);
+  })();
+  engineReady.catch(() => { engineReady = null; });
+  return engineReady;
+}
+
+async function start() {
+  try {
+    if (!window.isSecureContext) throw new Error('Le micro ne marche que sur un lien https:// (ou en local sur ordinateur). Ouvre la version en ligne.');
+    if (!navigator.mediaDevices || !window.AudioWorkletNode) throw new Error(IS_IOS ? 'Mets à jour iOS (14.5 minimum) et utilise Safari.' : 'Navigateur non compatible. Utilise Chrome, Edge ou Safari récent.');
+    await ensureEngine();
     await openMic();
     await listDevices();
     running = true;
@@ -442,7 +493,6 @@ async function start() {
     if (!CAN_SINK) status('Micro actif. Coche « Jouer la voix » (avec des écouteurs, sinon ça siffle).');
     else if (!$('outDev').value) status('Micro actif. Choisis une sortie vers l\'appel, ou coche « M\'entendre » pour tester.');
     else await setOutput();
-    draw();
   } catch (e) {
     status(e.name === 'NotAllowedError' ? 'Micro refusé. Autorise-le dans la barre d\'adresse puis réessaie.' : e.message, true);
     stop();
@@ -451,12 +501,21 @@ async function start() {
 
 function stop() {
   running = false;
+  if (call) {
+    // Pendant un appel, on garde le moteur : on coupe seulement le micro direct.
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    if (n && n.src) n.src.disconnect();
+    stream = null;
+    $('toggle').textContent = 'Activer la voix';
+    $('toggle').setAttribute('aria-pressed', 'false');
+    return;
+  }
   if (stream) stream.getTracks().forEach(t => t.stop());
   if (outEl) outEl.pause();
   if (ctx) ctx.close();
   if (wakeLock) wakeLock.release().catch(() => {});
   wakeLock = null;
-  ctx = null; n = null; stream = null; outEl = null;
+  ctx = null; n = null; stream = null; outEl = null; engineReady = null;
   $('toggle').textContent = 'Activer la voix';
   $('toggle').setAttribute('aria-pressed', 'false');
   $('rec').disabled = true;
@@ -465,7 +524,7 @@ function stop() {
 
 const cv = $('scope'), g2 = cv.getContext('2d');
 function draw() {
-  if (!running || !n) { g2.clearRect(0, 0, cv.width, cv.height); return; }
+  if (!n) { g2.clearRect(0, 0, cv.width, cv.height); return; }
   const data = new Float32Array(n.analyser.fftSize);
   n.analyser.getFloatTimeDomainData(data);
   const cs = getComputedStyle(document.documentElement);
@@ -483,6 +542,116 @@ function draw() {
   document.querySelector('#mask .mouth').style.transform = 'scaleY(' + (1 + Math.min(peak * 2.5, 0.9)) + ')';
   requestAnimationFrame(draw);
 }
+
+// ---- Appels téléphoniques via Twilio ----
+const TWILIO_SDK = 'https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.18.5/dist/twilio.min.js';
+let device = null, callSrc = null, callTimer = null;
+function callStatus(msg, err) { const el = $('callStatus'); el.textContent = msg; el.classList.toggle('err', !!err); }
+function loadSdk() {
+  if (window.Twilio && window.Twilio.Device) return Promise.resolve();
+  return new Promise((ok, ko) => {
+    const sc = document.createElement('script');
+    sc.src = TWILIO_SDK; sc.onload = ok;
+    sc.onerror = () => ko(new Error('Impossible de charger Twilio. Vérifie ta connexion.'));
+    document.head.appendChild(sc);
+  });
+}
+// 06 12 34 56 78 -> +33612345678
+function normalizeNumber(raw) {
+  let v = raw.replace(/[\s.\-()]/g, '');
+  if (v.startsWith('00')) v = '+' + v.slice(2);
+  if (/^0\d{9}$/.test(v)) v = '+33' + v.slice(1);
+  return /^\+\d{8,15}$/.test(v) ? v : null;
+}
+async function getToken() {
+  const base = $('svc').value.trim().replace(/\/+$/, '');
+  if (!/^https:\/\//.test(base)) throw new Error('Mets l\'adresse du service Twilio dans les réglages (https://…twil.io).');
+  let res;
+  try { res = await fetch(base + '/token?pin=' + encodeURIComponent($('pin').value)); }
+  catch (e) { throw new Error('Service Twilio injoignable. Vérifie l\'adresse dans les réglages.'); }
+  if (res.status === 401) throw new Error('Code PIN refusé.');
+  if (!res.ok) throw new Error('Le service Twilio a répondu ' + res.status + '. Vérifie son déploiement.');
+  return (await res.json()).token;
+}
+// Twilio nous passe le micro brut, on lui rend la voix Ghostface.
+const ghostProcessor = {
+  async createProcessedStream(raw) {
+    await ensureEngine();
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    if (n.src) { n.src.disconnect(); n.src = null; }
+    callSrc = ctx.createMediaStreamSource(raw);
+    callSrc.connect(n.hp);
+    ctx.resume();
+    return n.dest.stream;
+  },
+  async destroyProcessedStream() {
+    if (callSrc) { callSrc.disconnect(); callSrc = null; }
+  }
+};
+async function ensureDevice() {
+  if (device) return device;
+  await loadSdk();
+  const token = await getToken();
+  device = new Twilio.Device(token, { codecPreferences: ['opus', 'pcmu'], closeProtection: true, logLevel: 'error' });
+  device.on('error', e => callStatus('Erreur Twilio : ' + (e.message || e), true));
+  device.on('tokenWillExpire', async () => { try { device.updateToken(await getToken()); } catch (e) {} });
+  await device.audio.addProcessor(ghostProcessor);
+  return device;
+}
+function callUi(active) {
+  $('callBtn').textContent = active ? 'Raccrocher' : 'Appeler';
+  $('callBtn').classList.toggle('hang', active);
+  $('toggle').disabled = active;
+}
+function endCall(msg, err) {
+  clearInterval(callTimer); callTimer = null;
+  call = null; callUi(false);
+  if (msg) callStatus(msg, err);
+  if (wakeLock && !running) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+async function startCall() {
+  const to = normalizeNumber($('callNum').value);
+  if (!to) { callStatus('Numéro invalide. Exemple : 06 12 34 56 78 ou +33612345678.', true); return; }
+  $('callBtn').disabled = true;
+  try {
+    const ready = ensureEngine(); // dans le geste, pour iOS
+    callStatus('Connexion au service…');
+    await ready;
+    const dev = await ensureDevice();
+    callStatus('Appel de ' + to + '…');
+    call = await dev.connect({ params: { To: to } });
+    callUi(true);
+    try { wakeLock = wakeLock || await navigator.wakeLock?.request('screen'); } catch (e) {}
+    call.on('ringing', () => callStatus('Ça sonne…'));
+    call.on('accept', () => {
+      const t0 = Date.now();
+      const tick = () => { const s = Math.floor((Date.now() - t0) / 1000); callStatus('En ligne · ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')); };
+      tick(); callTimer = setInterval(tick, 1000);
+    });
+    call.on('disconnect', () => endCall('Appel terminé.'));
+    call.on('cancel', () => endCall('Appel annulé.'));
+    call.on('reject', () => endCall('Appel refusé.'));
+    call.on('error', e => endCall('Erreur pendant l\'appel : ' + (e.message || e), true));
+  } catch (e) {
+    if (device && /token|jwt|20101|20104|31204/i.test(String(e.message || e.code))) { device.destroy(); device = null; }
+    endCall(e.name === 'NotAllowedError' ? 'Micro refusé. Autorise-le puis réessaie.' : (e.message || String(e)), true);
+    if (!$('svc').value || /PIN|adresse|injoignable/.test(e.message || '')) $('svcBox').open = true;
+  } finally {
+    $('callBtn').disabled = false;
+  }
+}
+$('callBtn').onclick = () => (call ? call.disconnect() : startCall());
+$('callNum').onkeydown = e => { if (e.key === 'Enter' && !call) startCall(); };
+['svc', 'pin'].forEach(id => {
+  try { $(id).value = localStorage.getItem('ghostface-' + id) || ''; } catch (e) {}
+  $(id).onchange = () => {
+    try { localStorage.setItem('ghostface-' + id, $(id).value.trim()); } catch (e) {}
+    if (device && !call) { device.destroy(); device = null; }
+  };
+});
+// Page hébergée chez Twilio (Assets) : le service est à la même adresse.
+if (!$('svc').value && /\.twil\.io$/.test(location.hostname)) $('svc').value = location.origin;
+if (!$('svc').value || !$('pin').value) $('svcBox').open = true;
 
 // Événements
 $('toggle').onclick = () => (running ? stop() : start());
