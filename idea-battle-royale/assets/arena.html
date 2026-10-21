@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Idea Battle Royale</title>
+<!--
+  Idea Battle Royale — live arena + visual report.
+  Data lives in the JSON script blocks with class "battle-step" below.
+  Blocks are merged in order (objects deep-merged, arrays of objects with "id" merged by id,
+  other arrays replaced). The highest "stage" (1-7) decides what is shown; below 7 the page
+  is in live mode. To add a phase, insert a new block right before the NEXT-STEP marker.
+-->
+<script type="application/json" class="battle-step">
+{
+  "stage": 7,
+  "lang": "en",
+  "title": "First 100 users for a meal-planning app",
+  "problem": "Acquire the first 100 active users with no marketing budget.",
+  "constraints": ["Solo founder", "~5h/week", "App already live (assumed)"],
+  "reframes": [
+    {"label": "Zoom out", "text": "The real goal is a repeatable channel, not 100 users."},
+    {"label": "Zoom in", "text": "The bottleneck is the first week of retention, not sign-ups."},
+    {"label": "Invert", "text": "Failure = 100 sign-ups who never plan a second week."}
+  ],
+  "assumptions": [
+    {"text": "Meal-prep communities are active and allow helpful posts", "status": "verified"},
+    {"text": "Users want a ready-made weekly plan more than a recipe search", "status": "assumed"}
+  ],
+  "rubric": [
+    {"name": "Impact", "weight": 30},
+    {"name": "Feasibility", "weight": 30},
+    {"name": "Speed", "weight": 25},
+    {"name": "Originality", "weight": 15}
+  ],
+  "fighters": [
+    {"id": "f1", "archetype": "Pragmatist", "emoji": "🛠️", "idea": "Reddit & FB groups", "pitch": "Answer meal-prep questions daily, link the app when relevant.", "strikeBy": "Red team", "strike": "Self-promo gets banned fast.", "rebuttal": "Lead with value, link only in profile.", "score": 6.9, "eliminated": null, "loot": "Communities where the audience already gathers"},
+    {"id": "f2", "archetype": "Visionary", "emoji": "🚀", "idea": "Grocery chain partnership", "pitch": "Get the app featured in a supermarket loyalty program.", "strikeBy": "Minimalist", "strike": "Months of sales cycles, no leverage at 0 users.", "rebuttal": "", "score": 4.1, "eliminated": 1, "lossReason": "No leverage yet", "loot": "Retail credibility"},
+    {"id": "f3", "archetype": "Contrarian", "emoji": "🔄", "idea": "Newsletter first", "pitch": "Market a free weekly meal-plan newsletter; the app is the upsell.", "strikeBy": "Red team", "strike": "Two products to maintain.", "rebuttal": "The newsletter is generated from the app's own data.", "score": 7.6, "scoreV2": 8.1, "eliminated": null, "loot": "Weekly habit"},
+    {"id": "f4", "archetype": "Minimalist", "emoji": "✂️", "idea": "100 DMs", "pitch": "Personally onboard 100 people from your network.", "strikeBy": "Pragmatist", "strike": "Friends aren't the target and churn later.", "rebuttal": "Ask each for 2 referrals in the target group.", "score": 6.2, "eliminated": 1, "lossReason": "Doesn't reach the real audience", "loot": "Personal onboarding"}
+  ],
+  "looting": [
+    {"to": "Newsletter first", "from": "100 DMs", "loot": "Personal onboarding", "result": "Every new subscriber gets a personal reply asking their diet goal."}
+  ],
+  "mutations": [
+    {"on": "Newsletter first", "mutation": "Make it a 'cook-along' live every Sunday", "kept": false, "why": "Too much founder time"}
+  ],
+  "duel": {"a": "Newsletter first", "scoreA": 8.1, "b": "Reddit & FB groups", "scoreB": 6.9, "champion": "Newsletter first", "reason": "It compounds every week while Reddit effort resets daily."},
+  "superIdea": {
+    "name": "The Sunday Plan",
+    "oneLiner": "A free Sunday email with a ready-to-cook weekly plan, built from the app, shared in meal-prep communities, with one-click 'cook this week in the app'.",
+    "howItWorks": ["Generate the weekly plan from the app's recipes", "Share it as a free resource in meal-prep communities", "Reply personally to every new subscriber"],
+    "whyWon": "Compounding weekly habit, plus the reach of communities and the warmth of personal onboarding.",
+    "scores": [
+      {"name": "Impact", "value": 9, "champion": 8},
+      {"name": "Feasibility", "value": 8.5, "champion": 8.5},
+      {"name": "Speed", "value": 8, "champion": 7.5},
+      {"name": "Originality", "value": 8.5, "champion": 8}
+    ],
+    "score": 8.6,
+    "championScore": 8.1,
+    "premortem": [
+      {"risk": "Nobody opens the email", "safeguard": "Subject line = the dish, not the brand"},
+      {"risk": "Banned from communities", "safeguard": "Share the full plan in-post, link only on request"},
+      {"risk": "Founder burnout", "safeguard": "Plan auto-generated, 30 min/week max"}
+    ],
+    "confidence": "high",
+    "changeMind": "If fewer than 20% open the first 3 emails, switch to the runner-up.",
+    "firstMoves": [
+      {"when": "Today", "what": "Write the first Sunday Plan from the app's recipes"},
+      {"when": "This week", "what": "Share it in 3 meal-prep communities"},
+      {"when": "This month", "what": "Reply personally to every subscriber"}
+    ]
+  },
+  "runnerUp": {"name": "Reddit & FB groups", "when": "If you'd rather spend time daily than build a weekly ritual."}
+}
+</script>
+<!--NEXT-STEP-->
+<style>
+:root{
+  --bg:#f6f4ef;--surface:#ffffff;--surface-2:#efece4;--text:#1d1b18;--muted:#6b665d;--line:#ddd8cc;
+  --accent:#d9480f;--accent-soft:#ffe8dc;--gold:#b7791f;--gold-soft:#fff3d6;--danger:#c92a2a;--ok:#2b8a3e;
+  --bar:#4263eb;--bar-2:#a5b4fc;--shadow:0 6px 24px rgba(30,20,10,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121110;--surface:#1c1a18;--surface-2:#262320;--text:#f2efe9;--muted:#a39d92;--line:#36322d;
+    --accent:#ff7a3d;--accent-soft:#3a2216;--gold:#f2b84b;--gold-soft:#3a2e14;--danger:#ff6b6b;--ok:#69db7c;
+    --bar:#748ffc;--bar-2:#3b4a8c;--shadow:0 6px 24px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121110;--surface:#1c1a18;--surface-2:#262320;--text:#f2efe9;--muted:#a39d92;--line:#36322d;
+  --accent:#ff7a3d;--accent-soft:#3a2216;--gold:#f2b84b;--gold-soft:#3a2e14;--danger:#ff6b6b;--ok:#69db7c;
+  --bar:#748ffc;--bar-2:#3b4a8c;--shadow:0 6px 24px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:hidden}
+main{max-width:760px;margin:0 auto;padding:16px 16px 64px}
+h1{font-size:1.6rem;line-height:1.2;margin:.2em 0 .1em}
+h2{font-size:1.15rem;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.kicker{color:var(--accent);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:.75rem}
+.muted{color:var(--muted)}
+section{margin-top:28px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{background:var(--surface-2);border-radius:999px;padding:3px 10px;font-size:.85rem}
+.sub{margin-top:12px}
+.frames{display:grid;gap:6px;margin-top:6px}
+.frame{padding:8px 10px;border-left:3px solid var(--accent);background:var(--surface-2);border-radius:0 8px 8px 0;font-size:.9rem}
+.frame b{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--accent)}
+.asm{font-size:.9rem;margin:3px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.fighter{position:relative;overflow:hidden}
+.fighter .emoji{font-size:1.8rem}
+.fighter h3{margin:4px 0 2px;font-size:1rem}
+.fighter .arch{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.fighter p{margin:6px 0 0;font-size:.9rem}
+.badge{display:inline-block;font-size:.7rem;font-weight:800;padding:1px 7px;border-radius:99px;background:var(--ok);color:#fff;margin-left:6px;vertical-align:2px}
+.stamp{position:absolute;top:16px;right:12px;transform:rotate(12deg) scale(2.5);opacity:0;border:3px solid var(--danger);color:var(--danger);
+  font-weight:800;padding:2px 8px;border-radius:6px;letter-spacing:.08em;font-size:.8rem;background:var(--surface)}
+.fighter.out{filter:grayscale(.8);opacity:.6}
+.fighter.out .stamp{animation:stamp .45s cubic-bezier(.2,1.6,.4,1) forwards}
+@keyframes stamp{to{opacity:1;transform:rotate(12deg) scale(1)}}
+.attack{display:grid;gap:12px}
+.attack .row{display:grid;gap:4px}
+.attack .top{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.strike{color:var(--danger);font-size:.9rem}
+.rebut{font-size:.9rem;color:var(--muted)}
+.track{height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.fill{height:100%;width:0;background:var(--bar);border-radius:99px;transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
+.fill.loser{background:var(--danger);opacity:.55}
+.fill.v2{background:var(--ok)}
+.static .fill{transition:none}
+.loot{display:flex;gap:10px;align-items:flex-start}
+.loot+.loot{margin-top:10px}
+.loot .arrow{font-size:1.3rem}
+.duel{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;text-align:center}
+.duel .side{padding:14px 8px;border-radius:12px;background:var(--surface-2)}
+.duel .side.win{background:var(--gold-soft);outline:2px solid var(--gold)}
+.duel .big{font-size:1.6rem;font-weight:800}
+.vs{font-weight:900;font-size:1.4rem;color:var(--accent)}
+.reveal.in .vs{animation:pulse 1s ease 2}
+@keyframes pulse{50%{transform:scale(1.4)}}
+.super{border:2px solid var(--gold);background:linear-gradient(160deg,var(--gold-soft),var(--surface) 60%);position:relative;overflow:hidden}
+.super h2{font-size:1.4rem}
+.trophy{font-size:2.6rem;display:inline-block}
+.reveal.in:not(.static) .trophy{animation:bounce 1s ease}
+@keyframes bounce{0%{transform:scale(0) rotate(-20deg)}60%{transform:scale(1.25) rotate(8deg)}100%{transform:scale(1)}}
+.scoreline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:8px 0}
+.scoreline .big{font-size:2.4rem;font-weight:900;color:var(--gold)}
+.conf{display:inline-block;padding:2px 10px;border-radius:99px;background:var(--surface-2);font-size:.85rem;font-weight:700}
+ol,ul{padding-left:20px;margin:6px 0}
+li{margin:4px 0}
+.crit{display:grid;grid-template-columns:110px 1fr 38px;gap:8px;align-items:center;font-size:.9rem;margin:6px 0}
+.crit .tracks{display:grid;gap:3px}
+.crit .fill.champ{background:var(--bar-2)}
+.legend{display:flex;gap:14px;font-size:.8rem;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.pm{display:grid;gap:8px}
+.pm .item{display:grid;gap:2px;padding:10px 12px;border-radius:10px;background:var(--surface-2)}
+.pm .risk{color:var(--danger);font-weight:600}
+.pm .safe{color:var(--ok)}
+.moves{display:grid;gap:10px}
+.move{display:flex;gap:12px;align-items:flex-start}
+.move .n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
+.move b{display:block}
+.rank .crit{grid-template-columns:minmax(90px,150px) 1fr 38px}
+.actions{display:flex;justify-content:center;margin-top:32px}
+button{font:inherit;cursor:pointer;border:0;border-radius:999px;padding:10px 18px;background:var(--accent);color:#fff;font-weight:700}
+button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+.reveal.static{transition:none}
+.drop{opacity:0;transform:translateY(-40px) scale(.9)}
+.reveal.in .drop{animation:drop .55s cubic-bezier(.2,1.4,.4,1) forwards}
+.reveal.static .drop{animation:none;opacity:1;transform:none}
+@keyframes drop{to{opacity:1;transform:none}}
+
+/* Live banner */
+.live{position:sticky;top:0;z-index:5;margin:-16px -16px 0;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:var(--shadow)}
+.live .row{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.9rem}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--danger);animation:blink 1s ease-in-out infinite}
+@keyframes blink{50%{opacity:.25}}
+.live .tag{color:var(--danger);letter-spacing:.08em;font-size:.75rem}
+.live .bar{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-top:8px}
+.live .bar div{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:99px;transition:width .8s ease}
+.mini{margin-left:auto;display:flex;gap:2px;font-size:1.1rem}
+.mini .a{animation:jab-l .8s ease-in-out infinite}
+.mini .b{animation:jab-r .8s ease-in-out infinite}
+@keyframes jab-l{50%{transform:translateX(5px) rotate(12deg)}}
+@keyframes jab-r{0%,100%{transform:scaleX(-1)}50%{transform:translateX(-5px) scaleX(-1) rotate(12deg)}}
+.live.done .dot{background:var(--ok);animation:none}
+.live.done .tag{color:var(--ok)}
+
+/* Thinking card (current phase in live mode) */
+.thinking{text-align:center;border-style:dashed;position:relative;overflow:hidden}
+.thinking::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.18) 50%,transparent 70%);transform:translateX(-100%);animation:shimmer 1.6s infinite}
+@keyframes shimmer{to{transform:translateX(100%)}}
+.thinking .label{font-weight:700;margin-top:4px}
+.skel{height:10px;border-radius:99px;background:var(--surface-2);margin:10px auto 0;max-width:80%}
+.skel+.skel{max-width:60%}
+
+/* Fencers (loader + thinking) */
+.clash{position:relative;height:90px;margin:0 auto;width:190px}
+.clash span{position:absolute;top:24px;font-size:2.4rem}
+.clash .l{left:0;animation:lunge-l 1s ease-in-out infinite}
+.clash .r{right:0;animation:lunge-r 1s ease-in-out infinite}
+.clash .spark{left:50%;top:16px;transform:translateX(-50%) scale(0);font-size:2rem;animation:spark 1s ease-in-out infinite}
+@keyframes lunge-l{0%,100%{transform:translateX(0)}45%{transform:translateX(58px) rotate(15deg)}}
+@keyframes lunge-r{0%,100%{transform:translateX(0) scaleX(-1)}45%{transform:translateX(-58px) scaleX(-1) rotate(15deg)}}
+@keyframes spark{0%,35%{transform:translateX(-50%) scale(0);opacity:0}48%{transform:translateX(-50%) scale(1.3);opacity:1}70%,100%{transform:translateX(-50%) scale(.2);opacity:0}}
+
+/* Full-screen overlay (replay loader + final splash) */
+#overlay{position:fixed;inset:0;z-index:10;background:var(--bg);display:grid;place-items:center;padding:16px;transition:opacity .5s ease}
+#overlay.done{opacity:0;pointer-events:none}
+.ld{text-align:center;max-width:340px;width:100%}
+.ld .phase{font-weight:700;min-height:1.5em;margin-top:12px}
+.ld .bar{height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin:14px 0 6px}
+.ld .bar div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:99px;transition:width .5s ease}
+.ld .count{font-size:.8rem;color:var(--muted)}
+.ld button{margin-top:18px}
+.splash .big{font-size:4rem;animation:bounce 1s ease}
+.splash .name{font-size:1.5rem;font-weight:900;margin-top:6px}
+
+.confetti{position:absolute;top:-10px;width:8px;height:12px;border-radius:2px;opacity:0;pointer-events:none}
+.super.in:not(.static) .confetti{animation:fall 1.8s ease-in forwards}
+@keyframes fall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(420px) rotate(540deg)}}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .reveal,.drop{opacity:1;transform:none}
+  .fighter.out .stamp{opacity:1;transform:rotate(12deg)}
+}
+@media (max-width:480px){
+  h1{font-size:1.35rem}
+  .crit{grid-template-columns:84px 1fr 34px}
+  .duel .big{font-size:1.3rem}
+}
+</style>
+</head>
+<body>
+<div id="overlay" class="done" role="status" aria-live="polite"></div>
+<main id="app"></main>
+<script>
+(function(){
+  var LABELS = {
+    en: {phases:["The Arena","The Drop","The Attack","The Looting","The Final Duel","The Fusion","The Verdict"],
+      working:["Building the arena…","Fighters are landing…","Red team and rivals attacking…","Looting the fallen, mutating…","Final duel in progress…","Forging the super idea…","Writing the verdict…"],
+      live:"LIVE", finished:"FINISHED", skip:"Skip", step:"Phase", colon:": ", q:["“","”"],
+      arena:"The Arena", problem:"Problem", constraints:"Constraints", reframes:"Reframes", assumptions:"Hidden assumptions",
+      verified:"verified", assumed:"assumed", rubric:"Rubric", drop:"The Drop", fighters:"fighters", revived:"BACK",
+      attack:"The Attack", by:"by", out:"OUT", eliminated:"Eliminated", looting:"Looting & mutations", grabs:"grabs", from:"from",
+      kept:"kept", dropped:"dropped", duel:"The Final Duel", champion:"Champion", superIdea:"The Super Idea",
+      how:"How it works", why:"Why it won", final:"Final score", vsChamp:"champion alone", confidence:"Confidence",
+      conf:{low:"low",medium:"medium",high:"high"}, changeMind:"What would change my mind",
+      byCrit:"Score by criterion", superLbl:"Super idea", champLbl:"Champion", premortem:"Pre-mortem — how it could fail",
+      moves:"Your first 3 moves", runner:"Runner-up worth remembering", ranking:"Final ranking", replay:"Replay the battle",
+      winner:"And the winner is…"},
+    fr: {phases:["L'arène","Le drop","L'attaque","Le pillage","Le duel final","La fusion","Le verdict"],
+      working:["Préparation de l'arène…","Les combattants atterrissent…","Le red team et les rivaux attaquent…","Pillage des vaincus, mutations…","Duel final en cours…","Fusion de la super idée…","Rédaction du verdict…"],
+      live:"EN DIRECT", finished:"TERMINÉ", skip:"Passer", step:"Phase", colon:" : ", q:["« "," »"],
+      arena:"L'arène", problem:"Problème", constraints:"Contraintes", reframes:"Recadrages", assumptions:"Hypothèses cachées",
+      verified:"vérifiée", assumed:"supposée", rubric:"Grille de notation", drop:"Le drop", fighters:"combattants", revived:"RETOUR",
+      attack:"L'attaque", by:"par", out:"ÉLIMINÉ", eliminated:"Éliminés", looting:"Pillage et mutations", grabs:"récupère", from:"de",
+      kept:"gardée", dropped:"rejetée", duel:"Le duel final", champion:"Champion", superIdea:"La super idée",
+      how:"Comment ça marche", why:"Pourquoi elle a gagné", final:"Score final", vsChamp:"champion seul", confidence:"Confiance",
+      conf:{low:"faible",medium:"moyenne",high:"élevée"}, changeMind:"Ce qui me ferait changer d'avis",
+      byCrit:"Score par critère", superLbl:"Super idée", champLbl:"Champion", premortem:"Pré-mortem — comment ça pourrait rater",
+      moves:"Tes 3 premiers coups", runner:"Finaliste à retenir", ranking:"Classement final", replay:"Rejouer le combat",
+      winner:"Et le vainqueur est…"}
+  };
+
+  function isObj(v){ return v && typeof v==='object' && !Array.isArray(v); }
+  function merge(a,b){
+    Object.keys(b).forEach(function(k){
+      var x=a[k], y=b[k];
+      if (Array.isArray(x) && Array.isArray(y) && y.length && y.every(function(i){return isObj(i)&&i.id!=null;})){
+        y.forEach(function(item){ var hit=x.filter(function(o){return isObj(o)&&o.id===item.id;})[0]; if(hit) merge(hit,item); else x.push(item); });
+      } else if (isObj(x) && isObj(y)) merge(x,y);
+      else a[k]=y;
+    });
+    return a;
+  }
+  var D = {};
+  document.querySelectorAll('script.battle-step, script#battle-data').forEach(function(b){
+    try { merge(D, JSON.parse(b.textContent)); } catch(e) { console.warn('Skipped an unreadable battle-step block'); }
+  });
+  var stage = Math.max(1, Math.min(7, Number(D.stage)||7));
+  var live = stage < 7;
+  var lang = String(D.lang || 'en').slice(0,2).toLowerCase();
+  var L = LABELS[lang] || LABELS.en;
+  document.documentElement.lang = lang;
+  if (D.title) document.title = D.title;
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function el(tag, cls, text){ var n=document.createElement(tag); if(cls) n.className=cls; if(text!=null&&text!=='') n.textContent=text; return n; }
+  function add(p){ for(var i=1;i<arguments.length;i++){ if(arguments[i]) p.appendChild(arguments[i]); } return p; }
+  function num(v){ v=Number(v); return isFinite(v)?v:0; }
+  function has(v){ return v!=null && v!=='' && !(Array.isArray(v)&&!v.length); }
+  function fmt(v){ return (Math.round(num(v)*10)/10).toString().replace('.', lang==='fr'?',':'.'); }
+  function bar(value, max, cls){ var t=el('div','track'), f=el('div','fill'+(cls?' '+cls:'')); f.dataset.w=Math.max(0,Math.min(100,num(value)/max*100)); t.appendChild(f); return t; }
+  function labelled(label, text){ var p=el('p'); add(p, el('b',null,label+L.colon)); p.appendChild(document.createTextNode(text)); return p; }
+  function list(tag, items){ var o=el(tag); (items||[]).forEach(function(t){ o.appendChild(el('li',null,t)); }); return o; }
+  function fencers(){ var c=el('div','clash'); c.setAttribute('aria-hidden','true'); add(c, el('span','l','🤺'), el('span','spark','💥'), el('span','r','🤺')); return c; }
+
+  var app = document.getElementById('app');
+  var fighters = D.fighters || [];
+  var S = D.superIdea || {};
+  // Each section remembers the stage it belongs to: in live mode, older ones appear instantly, the newest animates.
+  function section(st, icon, title, cls){ var s=el('section','reveal'+(cls?' '+cls:'')); s.dataset.stage=st; if(title) s.appendChild(el('h2',null,icon+' '+title)); return s; }
+
+  // Live banner
+  var banner = el('div','live'+(live?'':' done'));
+  var brow = el('div','row'); add(brow, el('span','dot'), el('span','tag',live?L.live:L.finished), el('span',null,L.step+' '+stage+'/7 · '+L.phases[stage-1]));
+  if (live){ var mini=el('span','mini'); mini.setAttribute('aria-hidden','true'); add(mini, el('span','a','🤺'), el('span','b','🤺')); brow.appendChild(mini); }
+  var bb = el('div','bar'), bf = el('div'); bf.style.width=(stage/7*100)+'%'; bb.appendChild(bf);
+  add(banner, brow, bb); app.appendChild(banner);
+
+  var head = section(1); add(head, el('div','kicker','⚔️ Idea Battle Royale'), el('h1',null,D.title||'')); app.appendChild(head);
+
+  // 1. Arena
+  var s = section(1,'🏟️',L.arena), c = el('div','card');
+  if (has(D.problem)) c.appendChild(labelled(L.problem, D.problem));
+  if (has(D.constraints)){ var ch=el('div','chips'); D.constraints.forEach(function(t){ ch.appendChild(el('span','chip',t)); }); add(c, el('div','muted',L.constraints), ch); }
+  if (has(D.reframes)){ var fr=el('div','frames'); D.reframes.forEach(function(r){ var f=el('div','frame'); add(f, el('b',null,r.label), el('span',null,r.text)); fr.appendChild(f); }); add(c, el('div','muted sub',L.reframes), fr); }
+  if (has(D.assumptions)){ var as=el('div'); D.assumptions.forEach(function(a){ as.appendChild(el('div','asm',(a.status==='verified'?'✅ ':'⚠️ ')+a.text+' ('+(a.status==='verified'?L.verified:L.assumed)+')')); }); add(c, el('div','muted sub',L.assumptions), as); }
+  if (has(D.rubric)){ var rb=el('div','chips'); D.rubric.forEach(function(r){ rb.appendChild(el('span','chip',r.name+' · '+r.weight+'%')); }); add(c, el('div','muted sub',L.rubric), rb); }
+  app.appendChild(add(s,c));
+
+  // 2. Drop
+  if (stage>=2 && fighters.length){
+    s = section(2,'🪂',L.drop+' — '+fighters.length+' '+L.fighters);
+    var g = el('div','grid');
+    fighters.forEach(function(f,i){
+      var k = el('div','card fighter drop'+(stage>=3&&f.eliminated?' will-out':''));
+      k.style.animationDelay=(i*0.12)+'s';
+      var h3 = el('h3',null,f.idea); if (f.revived) h3.appendChild(el('span','badge',L.revived));
+      add(k, el('div','emoji',f.emoji||'🥊'), el('div','arch',f.archetype), h3, el('p',null,f.pitch), el('div','stamp',L.out));
+      g.appendChild(k);
+    });
+    app.appendChild(add(s,g));
+  }
+
+  // 3. Attack
+  var scored = fighters.filter(function(f){ return f.score!=null; });
+  if (stage>=3 && scored.length){
+    s = section(3,'⚔️',L.attack); c = el('div','card attack');
+    scored.forEach(function(f){
+      var r = el('div','row'), top = el('div','top');
+      add(top, el('span',null,(f.emoji||'🥊')+' '+f.idea), el('span',null,fmt(f.score)+'/10'));
+      add(r, top,
+        has(f.strike)?el('div','strike','⚔️ '+(f.strikeBy?f.strikeBy+L.colon:'')+f.strike):null,
+        has(f.rebuttal)?el('div','rebut','🛡️ '+f.rebuttal):null,
+        bar(f.score,10,f.eliminated?'loser':''));
+      c.appendChild(r);
+    });
+    var outs = fighters.filter(function(f){return f.eliminated;});
+    if (outs.length){ var ul=el('ul'); outs.forEach(function(f){ var li=el('li'); add(li, el('b',null,'❌ '+f.idea)); if(f.lossReason) li.appendChild(document.createTextNode(' — '+f.lossReason)); ul.appendChild(li); }); add(c, el('b',null,L.eliminated), ul); }
+    app.appendChild(add(s,c));
+  }
+
+  // 4. Looting & mutations
+  if (stage>=4 && (has(D.looting)||has(D.mutations))){
+    s = section(4,'💰',L.looting); c = el('div','card');
+    (D.looting||[]).forEach(function(l){
+      var row = el('div','loot'), txt = el('div');
+      add(txt, el('b',null,l.to+' '+L.grabs+' '+L.q[0]+l.loot+L.q[1]+' '+L.from+' '+l.from), has(l.result)?el('div','muted',l.result):null);
+      c.appendChild(add(row, el('span','arrow','🎒'), txt));
+    });
+    (D.mutations||[]).forEach(function(m){
+      var row = el('div','loot'), txt = el('div');
+      add(txt, el('b',null,m.on+' → '+m.mutation), el('div','muted',(m.kept?'✅ '+L.kept:'✖️ '+L.dropped)+(m.why?' — '+m.why:'')));
+      c.appendChild(add(row, el('span','arrow','🧬'), txt));
+    });
+    app.appendChild(add(s,c));
+  }
+
+  // 5. Duel
+  if (stage>=5 && D.duel){
+    var du=D.duel; s = section(5,'🥊',L.duel); c = el('div','card');
+    var d = el('div','duel');
+    var side = function(name, sc){ var x=el('div','side'+(name===du.champion?' win':'')); add(x, el('div',null,(name===du.champion?'🏆 ':'')+name), el('div','big',fmt(sc))); return x; };
+    add(d, side(du.a,du.scoreA), el('div','vs','VS'), side(du.b,du.scoreB));
+    c.appendChild(d);
+    if (has(du.reason)) c.appendChild(labelled(L.champion+' — '+du.champion, du.reason));
+    app.appendChild(add(s,c));
+  }
+
+  // 6. Super idea
+  if (stage>=6 && has(S.name)){
+    s = section(6,null,null,'card super');
+    add(s, el('div','trophy','🏆'), el('div','kicker',L.superIdea), el('h2',null,S.name), el('p',null,S.oneLiner||''));
+    if (S.score!=null){ var sl = el('div','scoreline'); add(sl, el('span','big',fmt(S.score)+'/10'), el('span','muted',L.final+(S.championScore!=null?' · '+L.vsChamp+' '+fmt(S.championScore):''))); s.appendChild(sl); }
+    if (has(S.howItWorks)) add(s, el('b',null,L.how), list('ol',S.howItWorks));
+    if (has(S.whyWon)) s.appendChild(labelled(L.why, S.whyWon));
+    if (has(S.confidence)){ var cp=el('p'); add(cp, el('b',null,L.confidence+L.colon), el('span','conf',L.conf[S.confidence]||S.confidence)); s.appendChild(cp); }
+    if (has(S.changeMind)) s.appendChild(labelled(L.changeMind, S.changeMind));
+    for (var i=0;i<26;i++){ var cf=el('span','confetti'); cf.style.left=(Math.random()*100)+'%'; cf.style.background=['var(--gold)','var(--accent)','var(--bar)','var(--ok)'][i%4]; cf.style.animationDelay=(Math.random()*0.6)+'s'; s.appendChild(cf); }
+    app.appendChild(s);
+
+    if (has(S.scores)){
+      s = section(6,'📊',L.byCrit); c = el('div','card');
+      S.scores.forEach(function(r){
+        var row=el('div','crit'), tr=el('div','tracks');
+        add(tr, bar(r.value,10,'v2'), r.champion!=null?bar(r.champion,10,'champ'):null);
+        c.appendChild(add(row, el('span',null,r.name), tr, el('b',null,fmt(r.value))));
+      });
+      var lg=el('div','legend'), la=el('span'), lb=el('span');
+      la.innerHTML='<i style="background:var(--ok)"></i>'; la.appendChild(document.createTextNode(L.superLbl));
+      lb.innerHTML='<i style="background:var(--bar-2)"></i>'; lb.appendChild(document.createTextNode(L.champLbl));
+      c.appendChild(add(lg,la,lb));
+      app.appendChild(add(s,c));
+    }
+    if (has(S.premortem)){
+      s = section(6,'🧯',L.premortem); c = el('div','pm');
+      S.premortem.forEach(function(p){ var it=el('div','item'); c.appendChild(add(it, el('span','risk','⚠️ '+p.risk), el('span','safe','✅ '+p.safeguard))); });
+      app.appendChild(add(s,c));
+    }
+  }
+
+  // 7. Verdict
+  if (stage>=7){
+    if (scored.length){
+      s = section(7,'🏅',L.ranking); c = el('div','card rank');
+      scored.slice().sort(function(x,y){ return num(y.scoreV2!=null?y.scoreV2:y.score)-num(x.scoreV2!=null?x.scoreV2:x.score); }).forEach(function(f){
+        var v=f.scoreV2!=null?f.scoreV2:f.score, row=el('div','crit');
+        c.appendChild(add(row, el('span',null,(f.emoji||'🥊')+' '+f.idea), bar(v,10,f.eliminated?'loser':(f.scoreV2!=null?'v2':'')), el('b',null,fmt(v))));
+      });
+      app.appendChild(add(s,c));
+    }
+    if (has(S.firstMoves)){
+      s = section(7,'🎯',L.moves); c = el('div','card moves');
+      S.firstMoves.forEach(function(m,i){ var mv=el('div','move'), t=el('div'); add(t, el('b',null,m.when), el('span',null,m.what)); c.appendChild(add(mv, el('span','n',String(i+1)), t)); });
+      app.appendChild(add(s,c));
+    }
+    if (D.runnerUp && has(D.runnerUp.name)){
+      s = section(7,'🥈',L.runner); c = el('div','card');
+      add(c, el('b',null,D.runnerUp.name), has(D.runnerUp.when)?el('div','muted',D.runnerUp.when):null);
+      app.appendChild(add(s,c));
+    }
+    var act = el('div','actions'), replay = el('button',null,'🔁 '+L.replay); act.appendChild(replay); app.appendChild(act);
+  } else {
+    // The phase Claude is working on right now
+    s = section(stage+1); c = el('div','card thinking');
+    add(c, fencers(), el('div','kicker',L.step+' '+(stage+1)+'/7 · '+L.phases[stage]), el('div','label',L.working[stage]), el('div','skel'), el('div','skel'));
+    app.appendChild(add(s,c));
+  }
+
+  // Reveal
+  var nodes = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  function show(n, instant){
+    if (n.classList.contains('in')) return;
+    if (instant) n.classList.add('static');
+    n.classList.add('in');
+    n.querySelectorAll('.fill').forEach(function(f){ f.style.width=f.dataset.w+'%'; });
+    n.querySelectorAll('.will-out').forEach(function(f,i){ setTimeout(function(){ f.classList.add('out'); }, (instant||reduce)?0:900+i*250); });
+  }
+  var io = ('IntersectionObserver' in window) ? new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ show(e.target); io.unobserve(e.target); } }); },{threshold:.15}) : null;
+  function revealAll(){ nodes.forEach(function(n){ if(io) io.observe(n); else show(n); }); setTimeout(function(){ nodes.forEach(function(n){ show(n); }); }, 8000); }
+  function reset(){ nodes.forEach(function(n){ n.classList.remove('in','static'); n.querySelectorAll('.fill').forEach(function(f){ f.style.width='0'; }); n.querySelectorAll('.out').forEach(function(f){ f.classList.remove('out'); }); if(io) io.unobserve(n); }); }
+
+  // Overlay: full loader (replay) and winner splash (end of a live battle)
+  var ov = document.getElementById('overlay'), timer=null;
+  function closeOverlay(){ clearInterval(timer); clearTimeout(timer); ov.classList.add('done'); window.scrollTo(0,0); revealAll(); }
+  ov.addEventListener('click', function(e){ if(e.target===ov) closeOverlay(); });
+  function loader(){
+    reset(); ov.innerHTML=''; var box=el('div','ld'), ph=el('div','phase'), b=el('div','bar'), bfill=el('div'), cnt=el('div','count'), sk=el('button','ghost',L.skip);
+    b.appendChild(bfill); add(box, fencers(), ph, b, cnt, sk); ov.appendChild(box); sk.addEventListener('click', closeOverlay);
+    ov.classList.remove('done'); var st=0;
+    function tick(){ if(st>=7){ closeOverlay(); return; } ph.textContent=L.working[st]; bfill.style.width=((st+1)/7*100)+'%'; cnt.textContent=L.step+' '+(st+1)+' / 7'; st++; }
+    tick(); timer=setInterval(tick, 650);
+  }
+  function splash(){
+    reset(); ov.innerHTML=''; var box=el('div','ld splash');
+    add(box, el('div','muted',L.winner), el('div','big','🏆'), el('div','name',S.name||(D.duel&&D.duel.champion)||''));
+    ov.appendChild(box); ov.classList.remove('done'); timer=setTimeout(closeOverlay, 1800);
+  }
+  if (typeof replay!=='undefined') replay.addEventListener('click', function(){ reduce?closeOverlay():loader(); });
+
+  if (live){
+    nodes.forEach(function(n){ show(n, Number(n.dataset.stage)<stage || n.dataset.stage>stage); });
+    var newest = nodes.filter(function(n){ return Number(n.dataset.stage)===stage; });
+    if (newest.length && stage>1) setTimeout(function(){ newest[0].scrollIntoView({behavior:reduce?'auto':'smooth', block:'start'}); }, 100);
+  } else if (reduce) { revealAll(); }
+  else { splash(); }
+})();
+</script>
+</body>
+</html>
