@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ghostface Voice</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ghostface">
+<meta name="theme-color" content="#0b0b0e">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Un seul écran : masque, gros bouton d'enregistrement, actions, choix de la voix. */
+:root {
+  --ink: #0b0b0e;
+  --robe: #15151a;
+  --seam: #26262e;
+  --bone: #e8e7e1;
+  --ash: #8d8c95;
+  --blood: #a3202a;
+  --display: "Special Elite", "Courier New", monospace;
+  --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; background: var(--ink); color: var(--bone); }
+body { font: 16px/1.5 var(--body); -webkit-tap-highlight-color: transparent; }
+main {
+  min-height: 100%; max-width: 480px; margin: 0 auto;
+  padding-top: max(24px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; align-items: center; gap: 22px; text-align: center;
+}
+h1 { font: 400 2rem/1 var(--display); margin: 0; }
+#mask { width: 132px; height: 176px; }
+#mask .mouth { transform-origin: 60px 112px; transition: transform 60ms linear; }
+#status { color: var(--ash); min-height: 3em; margin: 0; max-width: 32ch; }
+#status.err { color: #ff8a8f; }
+
+#rec {
+  width: 148px; height: 148px; border-radius: 50%; cursor: pointer;
+  border: 3px solid var(--bone); background: var(--robe); color: var(--bone);
+  font: 600 1.05rem var(--body); text-transform: uppercase; letter-spacing: .05em;
+  display: grid; place-items: center; touch-action: manipulation;
+}
+#rec .dot { display: block; width: 46px; height: 46px; border-radius: 50%; background: var(--blood); margin: 0 auto 6px; transition: border-radius .2s, transform .2s; }
+#rec.on { border-color: var(--blood); }
+#rec.on .dot { border-radius: 8px; transform: scale(.7); }
+#rec:focus-visible, button:focus-visible { outline: 2px solid var(--bone); outline-offset: 4px; }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.actions button, .actions a {
+  font: 600 1rem var(--body); padding: 12px 20px; border-radius: 999px; cursor: pointer; text-decoration: none;
+  border: 1px solid var(--bone); background: transparent; color: var(--bone);
+}
+.actions .main { background: var(--bone); color: var(--ink); }
+
+.voices { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.voices button {
+  font: 500 .95rem var(--body); padding: 8px 14px; border-radius: 999px; cursor: pointer;
+  background: transparent; color: var(--bone); border: 1px solid var(--seam);
+}
+.voices button[aria-pressed="true"] { border-color: var(--bone); background: var(--robe); }
+.live { display: flex; gap: 10px; align-items: center; color: var(--ash); }
+.live input { width: 20px; height: 20px; accent-color: var(--bone); }
+.hint { color: var(--ash); font-size: .85rem; margin: 0; max-width: 36ch; }
+@media (prefers-reduced-motion: reduce) { #mask .mouth, #rec .dot { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <svg id="mask" viewBox="0 0 120 160" aria-hidden="true">
+    <path d="M60 4C28 4 10 30 12 66c2 34 18 62 30 78 8 11 28 11 36 0 12-16 28-44 30-78C110 30 92 4 60 4Z" fill="var(--bone)"/>
+    <path d="M26 58c6-12 22-14 28-4 4 8-2 26-12 30-10 4-22-12-16-26Z" fill="var(--ink)"/>
+    <path d="M94 58c-6-12-22-14-28-4-4 8 2 26 12 30 10 4 22-12 16-26Z" fill="var(--ink)"/>
+    <path d="M57 92c1-6 5-6 6 0" stroke="var(--ink)" stroke-width="2" fill="none"/>
+    <ellipse class="mouth" cx="60" cy="122" rx="9" ry="16" fill="var(--ink)"/>
+  </svg>
+  <h1>Ghostface Voice</h1>
+
+  <button id="rec" aria-label="Enregistrer"><span><span class="dot"></span><span id="recLabel" style="display:block">Parler</span></span></button>
+  <p id="status" role="status">Touche le bouton et parle. Ta voix ressort en Ghostface.</p>
+
+  <div class="actions" id="actions" hidden>
+    <button id="play">Réécouter</button>
+    <button id="share" class="main">Envoyer</button>
+    <a id="save" download="ghostface.m4a" hidden>Enregistrer le fichier</a>
+  </div>
+
+  <div class="voices" id="voices">
+    <button data-p="ghost" aria-pressed="true">Ghostface</button>
+    <button data-p="demon" aria-pressed="false">Plus sombre</button>
+    <button data-p="robot" aria-pressed="false">Métallique</button>
+  </div>
+
+  <label class="live"><input id="live" type="checkbox"> Voix en direct (avec écouteurs)</label>
+  <p class="hint">« Envoyer » ouvre le partage de l'iPhone : envoie le message vocal sur WhatsApp, Snap, Insta ou par SMS.</p>
+  <audio id="player" hidden></audio>
+</main>
+
+<script>
+const WORKLET = `
+class GhostShifter extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [
+      { name: 'pitch', defaultValue: 0.72, minValue: 0.4, maxValue: 1.5, automationRate: 'k-rate' },
+      { name: 'gate', defaultValue: 0.012, minValue: 0, maxValue: 0.2, automationRate: 'k-rate' }
+    ];
+  }
+  constructor() {
+    super();
+    this.win = Math.round(sampleRate * 0.045);
+    this.N = this.win * 2 + 8;
+    this.buf = new Float32Array(this.N);
+    this.w = 0; this.ph = 0; this.env = 0; this.g = 0;
+    this.att = 1 - Math.exp(-1 / (sampleRate * 0.005));
+    this.rel = 1 - Math.exp(-1 / (sampleRate * 0.15));
+  }
+  rd(d) {
+    let r = this.w - d;
+    while (r < 0) r += this.N;
+    const i = Math.floor(r), f = r - i;
+    const a = this.buf[i], b = this.buf[(i + 1) % this.N];
+    return a + (b - a) * f;
+  }
+  process(inputs, outputs, params) {
+    const out = outputs[0][0];
+    if (!out) return true;
+    const x = inputs[0] && inputs[0][0];
+    const ratio = params.pitch[0], th = params.gate[0], win = this.win;
+    const inc = (1 - ratio) / win;
+    for (let n = 0; n < out.length; n++) {
+      const s = x ? x[n] : 0;
+      const a = Math.abs(s);
+      this.env += (a > this.env ? this.att : this.rel) * (a - this.env);
+      const target = this.env > th ? 1 : 0;
+      this.g += (target > this.g ? 0.01 : 0.0006) * (target - this.g);
+      this.buf[this.w] = s * this.g;
+      this.ph += inc;
+      if (this.ph >= 1) this.ph -= 1;
+      if (this.ph < 0) this.ph += 1;
+      const p2 = (this.ph + 0.5) % 1;
+      const w1 = Math.sin(Math.PI * this.ph) ** 2, w2 = Math.sin(Math.PI * p2) ** 2;
+      out[n] = this.rd(this.ph * win + 1) * w1 + this.rd(p2 * win + 1) * w2;
+      this.w = (this.w + 1) % this.N;
+    }
+    return true;
+  }
+}
+registerProcessor('ghost-shifter', GhostShifter);
+`;
+
+const PRESETS = {
+  ghost: { pitch: 0.72, drive: 0.35, ring: 0.12, verb: 0.12 },
+  demon: { pitch: 0.58, drive: 0.55, ring: 0.2, verb: 0.25 },
+  robot: { pitch: 0.8, drive: 0.2, ring: 0.65, verb: 0.1 }
+};
+let S = PRESETS.ghost;
+const $ = id => document.getElementById(id);
+let ctx = null, n = null, ready = null, recorder = null, clip = null, timer = null;
+
+function status(msg, err) { $('status').textContent = msg; $('status').classList.toggle('err', !!err); }
+
+function curve(drive) {
+  const k = drive * 60, len = 2048, c = new Float32Array(len);
+  for (let i = 0; i < len; i++) { const x = i / (len - 1) * 2 - 1; c[i] = (1 + k) * x / (1 + k * Math.abs(x)); }
+  return c;
+}
+function impulse(sec) {
+  const len = Math.floor(ctx.sampleRate * sec), b = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = b.getChannelData(ch);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+  }
+  return b;
+}
+function node(type, props) {
+  const x = type === 'gain' ? ctx.createGain() : ctx.createBiquadFilter();
+  if (type === 'gain') x.gain.value = props; else Object.entries(props).forEach(([k, v]) => k === 'type' ? (x.type = v) : (x[k].value = v));
+  return x;
+}
+
+// Micro -> grave -> grain -> métal -> écho -> sortie
+async function setup() {
+  if (!window.isSecureContext) throw new Error('Ouvre l\'appli depuis son lien https:// pour que le micro marche.');
+  if (!navigator.mediaDevices || !window.AudioWorkletNode) throw new Error('Mets à jour ton iPhone et utilise Safari.');
+  try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) {}
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  ctx.resume();
+  try {
+    await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET], { type: 'application/javascript' })));
+  } catch (e) {
+    await ctx.audioWorklet.addModule('data:application/javascript;charset=utf-8,' + encodeURIComponent(WORKLET));
+  }
+  const mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: false } });
+  n = {};
+  n.src = ctx.createMediaStreamSource(mic);
+  n.hp = node('biquad', { type: 'highpass', frequency: 90 });
+  n.shift = new AudioWorkletNode(ctx, 'ghost-shifter', { outputChannelCount: [1] });
+  n.low = node('biquad', { type: 'lowshelf', frequency: 220, gain: 5 });
+  n.rasp = node('biquad', { type: 'peaking', frequency: 2600, Q: 1, gain: 5 });
+  n.pre = node('gain', 1);
+  n.shaper = ctx.createWaveShaper(); n.shaper.oversample = '4x';
+  n.post = node('gain', 1);
+  n.dry = node('gain', 1);
+  n.ringG = node('gain', 0);
+  n.osc = ctx.createOscillator(); n.osc.frequency.value = 46; n.osc.connect(n.ringG.gain); n.osc.start();
+  n.ringMix = node('gain', 0);
+  n.sum = node('gain', 1);
+  n.comp = ctx.createDynamicsCompressor(); n.comp.threshold.value = -22; n.comp.ratio.value = 5;
+  n.conv = ctx.createConvolver(); n.conv.buffer = impulse(1.1);
+  n.verb = node('gain', 0);
+  n.out = node('gain', 1);
+  n.analyser = ctx.createAnalyser(); n.analyser.fftSize = 1024;
+  n.dest = ctx.createMediaStreamDestination();
+  n.speaker = node('gain', 0);
+
+  n.src.connect(n.hp).connect(n.shift).connect(n.low).connect(n.rasp).connect(n.pre).connect(n.shaper).connect(n.post);
+  n.post.connect(n.dry).connect(n.sum);
+  n.post.connect(n.ringG).connect(n.ringMix).connect(n.sum);
+  n.sum.connect(n.comp).connect(n.out);
+  n.comp.connect(n.conv).connect(n.verb).connect(n.out);
+  n.out.connect(n.analyser);
+  n.out.connect(n.dest);
+  n.out.connect(n.speaker).connect(ctx.destination);
+  apply();
+  requestAnimationFrame(mouth);
+}
+function ensure() {
+  if (!ready) { ready = setup(); ready.catch(() => { ready = null; if (ctx) ctx.close(); ctx = null; }); }
+  return ready;
+}
+
+function apply() {
+  if (!n) return;
+  const t = ctx.currentTime, set = (p, v) => p.setTargetAtTime(v, t, 0.03);
+  set(n.shift.parameters.get('pitch'), S.pitch);
+  n.shaper.curve = curve(S.drive);
+  set(n.pre.gain, 1 + S.drive * 2);
+  set(n.post.gain, 1 / (1 + S.drive * 3));
+  set(n.dry.gain, 1 - S.ring * 0.7);
+  set(n.ringMix.gain, S.ring);
+  set(n.verb.gain, S.verb * 0.6);
+  set(n.speaker.gain, $('live').checked && !recorder ? 1 : 0);
+}
+
+function mouth() {
+  if (!n) return;
+  const d = new Float32Array(n.analyser.fftSize);
+  n.analyser.getFloatTimeDomainData(d);
+  let peak = 0;
+  for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+  document.querySelector('#mask .mouth').style.transform = 'scaleY(' + (1 + Math.min(peak * 2.5, 0.9)) + ')';
+  requestAnimationFrame(mouth);
+}
+
+async function startRec() {
+  try {
+    await ensure();
+    ctx.resume();
+    $('player').pause();
+    const types = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
+    const mimeType = types.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t));
+    recorder = new MediaRecorder(n.dest.stream, mimeType ? { mimeType } : undefined);
+    const chunks = [];
+    recorder.ondataavailable = e => e.data.size && chunks.push(e.data);
+    recorder.onstop = () => {
+      const type = recorder.mimeType || mimeType || 'audio/mp4';
+      clip = new File(chunks, 'ghostface.' + (type.includes('webm') ? 'webm' : 'm4a'), { type });
+      recorder = null; apply();
+      const url = URL.createObjectURL(clip);
+      $('player').src = url;
+      $('save').href = url; $('save').download = clip.name;
+      $('actions').hidden = false;
+      const canShare = navigator.canShare && navigator.canShare({ files: [clip] });
+      $('share').hidden = !canShare; $('save').hidden = !!canShare;
+      status('Voilà ta voix Ghostface. Réécoute-la ou envoie-la.');
+      $('player').play().catch(() => {});
+    };
+    recorder.start();
+    apply();
+    $('rec').classList.add('on'); $('recLabel').textContent = 'Stop';
+    const t0 = Date.now();
+    const tick = () => { const s = Math.floor((Date.now() - t0) / 1000); status('Enregistrement… 0:' + String(s).padStart(2, '0')); if (s >= 59) stopRec(); };
+    tick(); timer = setInterval(tick, 500);
+  } catch (e) {
+    recorder = null;
+    status(e.name === 'NotAllowedError' ? 'Micro refusé. Va dans Réglages › Safari › Micro et autorise-le.' : e.message, true);
+  }
+}
+function stopRec() {
+  clearInterval(timer);
+  $('rec').classList.remove('on'); $('recLabel').textContent = 'Parler';
+  if (recorder && recorder.state !== 'inactive') recorder.stop();
+}
+
+$('rec').onclick = () => (recorder ? stopRec() : startRec());
+$('play').onclick = () => { const p = $('player'); p.currentTime = 0; p.play().catch(() => {}); };
+$('share').onclick = async () => {
+  try { await navigator.share({ files: [clip], title: 'Ghostface' }); }
+  catch (e) { if (e.name !== 'AbortError') status('Partage impossible : ' + e.message, true); }
+};
+$('voices').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  S = PRESETS[b.dataset.p];
+  document.querySelectorAll('#voices button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  apply();
+};
+$('live').onchange = async () => {
+  if ($('live').checked) {
+    try { await ensure(); ctx.resume(); status('Voix en direct. Garde tes écouteurs, sinon ça siffle.'); }
+    catch (e) { $('live').checked = false; status(e.name === 'NotAllowedError' ? 'Micro refusé. Va dans Réglages › Safari › Micro et autorise-le.' : e.message, true); }
+  }
+  apply();
+};
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ctx) ctx.resume().catch(() => {}); });
+</script>
+</body>
+</html>
