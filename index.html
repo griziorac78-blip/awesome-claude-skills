@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SPECTRE</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SPECTRE">
+<meta name="theme-color" content="#05070a">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Concept : HUD d'implant neural. Un noyau vivant au centre, les sous-processus en orbite, le flux neural en dessous. */
+:root{
+  --void:#05070a;
+  --panel:#0b0f14;
+  --line:#1a222c;
+  --bone:#d9dde3;
+  --dim:#6b7684;
+  --core:#7fb8d9;          /* SPECTRE */
+  --analyse:#9fb3c8;
+  --pulsion:#e0875a;
+  --empathie:#d79bb8;
+  --noyau:#d8c27a;
+  --echo:#8f86e0;
+  --danger:#e06a6a;
+  --f-display:"Major Mono Display", ui-monospace, monospace;
+  --f-body:"IBM Plex Sans", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+body{min-height:100dvh;overscroll-behavior:none}
+body{
+  background:var(--void);color:var(--bone);font-family:var(--f-body);font-weight:300;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  display:flex;justify-content:center;overflow-x:hidden;
+}
+body::after{ /* grain + scanlines */
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+  background:repeating-linear-gradient(to bottom, rgba(255,255,255,.018) 0 1px, transparent 1px 3px);
+  mix-blend-mode:overlay;
+}
+.app{width:100%;max-width:760px;display:flex;flex-direction:column;min-height:100%;padding-block:18px 14px;gap:14px}
+
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--f-display);font-size:1.6rem;letter-spacing:.12em;color:var(--core)}
+.brand small{display:block;font-family:var(--f-mono);font-size:.62rem;letter-spacing:.22em;color:var(--dim);text-transform:uppercase;margin-top:2px}
+.status{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:8px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--dim)}
+.status[data-s="connected"] .dot{background:var(--core);box-shadow:0 0 10px var(--core)}
+.status[data-s="connecting"] .dot{background:var(--noyau);animation:blink .8s infinite}
+.status[data-s="error"] .dot{background:var(--danger)}
+@keyframes blink{50%{opacity:.2}}
+
+.stage{position:relative;aspect-ratio:1/1;width:100%;max-width:420px;margin:0 auto}
+canvas#core{width:100%;height:100%;display:block}
+.readout{position:absolute;left:0;right:0;bottom:6%;text-align:center;font-family:var(--f-mono);font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.readout b{color:var(--bone);font-weight:500}
+
+.modules{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.mod{border-top:2px solid var(--line);padding-top:6px;font-family:var(--f-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);transition:color .25s,border-color .25s;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mod span{display:block;font-size:.55rem;opacity:.6;letter-spacing:.08em;text-transform:none}
+.mod.on{color:var(--c);border-color:var(--c)}
+
+.feed{flex:1;min-height:180px;max-height:42vh;overflow-y:auto;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.feed:empty::before{content:"Flux neural vide. Active la liaison et parle normalement.";color:var(--dim);font-size:.85rem}
+.msg{display:grid;grid-template-columns:76px 1fr;gap:10px;font-size:.95rem;line-height:1.5;animation:in .35s ease-out}
+@keyframes in{from{opacity:0;transform:translateY(4px)}}
+.who{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--c,var(--dim));padding-top:4px}
+.txt{min-width:0;overflow-wrap:anywhere}
+.msg.user .txt{color:var(--dim)}
+.msg.sys .txt{font-family:var(--f-mono);font-size:.72rem;color:var(--dim);letter-spacing:.06em}
+
+.controls{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
+button,input{font:inherit}
+.link{flex:1 1 200px;background:transparent;color:var(--core);border:1px solid var(--core);padding:14px 16px;font-family:var(--f-mono);font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s}
+.link:hover{background:var(--core);color:var(--void)}
+.link[data-on="1"]{color:var(--danger);border-color:var(--danger)}
+.link[data-on="1"]:hover{background:var(--danger);color:var(--void)}
+.say{flex:3 1 260px;display:flex;border:1px solid var(--line);background:var(--panel)}
+.say input{flex:1;min-width:0;background:transparent;border:0;color:var(--bone);padding:12px 14px;outline:none;font-size:16px;border-radius:0}
+.say button{background:transparent;border:0;border-left:1px solid var(--line);color:var(--dim);padding:0 14px;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.14em;cursor:pointer}
+.say button:hover{color:var(--core)}
+:focus-visible{outline:1px solid var(--core);outline-offset:2px}
+
+details{font-family:var(--f-mono);font-size:.68rem;color:var(--dim);letter-spacing:.06em}
+details input{width:100%;margin-top:6px;background:var(--panel);border:1px solid var(--line);color:var(--bone);padding:8px;font-family:var(--f-mono);font-size:.72rem}
+@media (max-width:480px){
+  .app{height:100dvh;min-height:0;padding-block:10px 8px;gap:10px}
+  .stage{max-width:min(78vw,34dvh)}
+  .feed{max-height:none;min-height:0}
+  .msg{grid-template-columns:1fr;gap:2px}.who{padding-top:0}
+  .modules{gap:4px}.mod span{display:none}
+  .link{padding:16px;font-size:.8rem}
+  .say button{padding:0 16px}
+}
+.link{touch-action:manipulation;-webkit-appearance:none;border-radius:0}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">spectre<small>Relique neurale · hôte : Elias</small></div>
+    <div class="status" id="status" data-s="idle"><i class="dot"></i><span id="statusTxt">Hors ligne</span></div>
+  </header>
+
+  <div class="stage">
+    <canvas id="core" aria-label="Noyau de l'implant"></canvas>
+    <div class="readout" id="readout">Liaison <b>inactive</b></div>
+  </div>
+
+  <div class="modules" id="modules">
+    <div class="mod" data-m="Analyse" style="--c:var(--analyse)">Analyse<span>logique</span></div>
+    <div class="mod" data-m="Pulsion" style="--c:var(--pulsion)">Pulsion<span>désirs</span></div>
+    <div class="mod" data-m="Empathie" style="--c:var(--empathie)">Empathie<span>émotions</span></div>
+    <div class="mod" data-m="Noyau" style="--c:var(--noyau)">Noyau<span>volonté</span></div>
+    <div class="mod" data-m="Echo" style="--c:var(--echo)">Écho<span>fragment</span></div>
+  </div>
+
+  <div class="feed" id="feed" aria-live="polite"></div>
+
+  <div class="controls">
+    <button class="link" id="linkBtn" data-on="0">Activer la liaison</button>
+    <form class="say" id="sayForm">
+      <input id="sayInput" placeholder="Ou écris-lui directement…" autocomplete="off">
+      <button type="submit">ENVOI</button>
+    </form>
+  </div>
+
+  <details>
+    <summary>Réglages</summary>
+    <label for="agentId">ID de l'agent ElevenLabs</label>
+    <input id="agentId" value="agent_2901m5sf3jxsesvajm30xby1zpbn">
+  </details>
+</div>
+
+<script type="module">
+import { Conversation } from "https://cdn.jsdelivr.net/npm/@elevenlabs/client@0/+esm";
+
+const COLORS = {
+  SPECTRE: "--core", Analyse: "--analyse", Pulsion: "--pulsion",
+  Empathie: "--empathie", Noyau: "--noyau", Echo: "--echo"
+};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const $ = id => document.getElementById(id);
+const feed = $("feed"), linkBtn = $("linkBtn");
+
+let conv = null, mode = "idle", activeModule = "SPECTRE", moduleTimer = null;
+
+try { const s = localStorage.getItem("spectre_agent"); if (s) $("agentId").value = s; } catch {}
+$("agentId").addEventListener("change", e => { try { localStorage.setItem("spectre_agent", e.target.value.trim()); } catch {} });
+
+function setStatus(s, txt){ $("status").dataset.s = s; $("statusTxt").textContent = txt; }
+
+function addMsg(who, text, cls=""){
+  const row = document.createElement("div");
+  row.className = "msg " + cls;
+  if (COLORS[who]) row.style.setProperty("--c", `var(${COLORS[who]})`);
+  row.innerHTML = `<div class="who"></div><div class="txt"></div>`;
+  row.querySelector(".who").textContent = who === "Echo" ? "Écho" : who;
+  row.querySelector(".txt").textContent = text;
+  feed.appendChild(row);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function lightModule(name){
+  activeModule = name;
+  document.querySelectorAll(".mod").forEach(m => m.classList.toggle("on", m.dataset.m === name));
+  clearTimeout(moduleTimer);
+  moduleTimer = setTimeout(() => { activeModule = "SPECTRE"; document.querySelectorAll(".mod").forEach(m => m.classList.remove("on")); }, 4500);
+}
+
+// Découpe une réponse en segments SPECTRE / sous-processus
+function parseAgent(raw){
+  const clean = s => s.replace(/\[[^\]]{1,24}\]/g, "").replace(/\s+/g, " ").trim();
+  const re = /<(Analyse|Pulsion|Empathie|Noyau|Echo)>([\s\S]*?)<\/\1>/g;
+  const parts = []; let last = 0, m;
+  while ((m = re.exec(raw))) {
+    if (m.index > last) parts.push(["SPECTRE", clean(raw.slice(last, m.index))]);
+    parts.push([m[1], clean(m[2])]);
+    last = re.lastIndex;
+  }
+  parts.push(["SPECTRE", clean(raw.slice(last))]);
+  return parts.filter(p => p[1]);
+}
+
+async function start(){
+  const agentId = $("agentId").value.trim();
+  setStatus("connecting", "Synchronisation…");
+  linkBtn.disabled = true;
+  try {
+    // Pas de demande de micro séparée : sur iPhone, l'audio doit démarrer directement depuis le toucher.
+    conv = await Conversation.startSession({
+      agentId,
+      connectionType: "websocket",
+      onConnect: () => {
+        setStatus("connected", "Liaison établie"); addMsg("SYS", "Liaison neurale établie.", "sys");
+        try { navigator.wakeLock?.request("screen").catch(() => {}); } catch {}
+      },
+      onDisconnect: () => stopUI(),
+      onError: (e) => { setStatus("error", "Erreur"); addMsg("SYS", "Erreur : " + (e?.message || e), "sys"); },
+      onModeChange: ({ mode: m }) => { mode = m; $("readout").innerHTML = m === "speaking" ? "Transmission <b>en cours</b>" : "Écoute <b>active</b>"; },
+      onMessage: ({ message, source }) => {
+        if (source === "user") { addMsg("Toi", message, "user"); return; }
+        for (const [who, text] of parseAgent(message)) {
+          addMsg(who, text);
+          if (who !== "SPECTRE") lightModule(who);
+        }
+      }
+    });
+    linkBtn.dataset.on = "1"; linkBtn.textContent = "Couper la liaison";
+  } catch (e) {
+    setStatus("error", "Échec");
+    addMsg("SYS", e?.name === "NotAllowedError" ? "Accès au micro refusé. Autorise-le dans ton navigateur puis réessaie." : "Connexion impossible : " + (e?.message || e), "sys");
+  } finally { linkBtn.disabled = false; }
+}
+
+function stopUI(){
+  conv = null; mode = "idle";
+  setStatus("idle", "Hors ligne");
+  $("readout").innerHTML = "Liaison <b>inactive</b>";
+  linkBtn.dataset.on = "0"; linkBtn.textContent = "Activer la liaison";
+}
+
+linkBtn.addEventListener("click", async () => {
+  if (conv) { await conv.endSession(); stopUI(); addMsg("SYS", "Liaison coupée.", "sys"); }
+  else start();
+});
+
+$("sayForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = $("sayInput").value.trim(); if (!v) return;
+  if (!conv) { addMsg("SYS", "Active d'abord la liaison.", "sys"); return; }
+  if (typeof conv.sendUserMessage === "function") { conv.sendUserMessage(v); addMsg("Toi", v, "user"); }
+  else addMsg("SYS", "L'envoi texte n'est pas pris en charge par cette version.", "sys");
+  $("sayInput").value = "";
+});
+
+// ---- Noyau animé ----
+const cv = $("core"), ctx = cv.getContext("2d");
+const N = 96; const seeds = Array.from({length:N}, () => Math.random());
+let level = 0, t = 0;
+function resize(){ const r = cv.getBoundingClientRect(), d = devicePixelRatio || 1; cv.width = r.width*d; cv.height = r.height*d; ctx.setTransform(d,0,0,d,0,0); }
+addEventListener("resize", resize); resize();
+
+function draw(){
+  const w = cv.clientWidth, h = cv.clientHeight, cx = w/2, cy = h/2, R = Math.min(w,h)*0.22;
+  let target = 0.04;
+  if (conv) {
+    try { target = mode === "speaking" ? conv.getOutputVolume() : conv.getInputVolume() * 0.7; } catch {}
+  }
+  level += (target - level) * 0.18; t += 0.006;
+  const col = css(COLORS[activeModule] || "--core");
+  ctx.clearRect(0,0,w,h);
+
+  // anneaux
+  ctx.strokeStyle = css("--line"); ctx.lineWidth = 1;
+  for (const k of [1.55, 1.95]) { ctx.beginPath(); ctx.arc(cx,cy,R*k,0,Math.PI*2); ctx.stroke(); }
+  // graduations
+  ctx.strokeStyle = css("--dim"); ctx.globalAlpha = .5;
+  for (let i=0;i<60;i++){ const a=i/60*Math.PI*2, l=i%5?4:9; ctx.beginPath(); ctx.moveTo(cx+Math.cos(a)*R*1.95, cy+Math.sin(a)*R*1.95); ctx.lineTo(cx+Math.cos(a)*(R*1.95-l), cy+Math.sin(a)*(R*1.95-l)); ctx.stroke(); }
+  ctx.globalAlpha = 1;
+
+  // filaments neuraux
+  ctx.strokeStyle = col; ctx.lineWidth = 1.2;
+  for (let i=0;i<N;i++){
+    const a = i/N*Math.PI*2 + t*0.3;
+    const n = Math.sin(t*3 + seeds[i]*12) * 0.5 + 0.5;
+    const len = R*(0.12 + n*0.2 + level*1.4*seeds[i]);
+    ctx.globalAlpha = 0.25 + n*0.5;
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(a)*R, cy+Math.sin(a)*R);
+    ctx.lineTo(cx+Math.cos(a)*(R+len), cy+Math.sin(a)*(R+len));
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // noyau
+  const g = ctx.createRadialGradient(cx,cy,0,cx,cy,R*(1+level*0.4));
+  g.addColorStop(0, col); g.addColorStop(.35, col + "55"); g.addColorStop(1, "transparent");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx,cy,R*(1+level*0.4),0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx,cy,R*0.92,0,Math.PI*2); ctx.stroke();
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
