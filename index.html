@@ -144,8 +144,33 @@ details input{width:100%;margin-top:6px;background:var(--panel);border:1px solid
   </details>
 </div>
 
+<script>
+// Affiche toute erreur JS directement dans le flux, même si le reste ne charge pas
+window.addEventListener("error", e => {
+  const f = document.getElementById("feed"); if (!f) return;
+  const d = document.createElement("div"); d.className = "msg sys";
+  d.innerHTML = '<div class="who">SYS</div><div class="txt"></div>';
+  d.querySelector(".txt").textContent = "Erreur : " + (e.message || e.error);
+  f.appendChild(d);
+});
+</script>
 <script type="module">
-import { Conversation } from "https://cdn.jsdelivr.net/npm/@elevenlabs/client@0/+esm";
+const SDK_URLS = [
+  "https://cdn.jsdelivr.net/npm/@elevenlabs/client/+esm",
+  "https://esm.sh/@elevenlabs/client",
+  "https://cdn.jsdelivr.net/npm/@elevenlabs/client@0/+esm"
+];
+let Conversation = null;
+async function loadSDK(){
+  if (Conversation) return Conversation;
+  let lastErr;
+  for (const u of SDK_URLS) {
+    try { const m = await import(u); Conversation = m.Conversation || m.default?.Conversation; if (Conversation) return Conversation; }
+    catch (e) { lastErr = e; }
+  }
+  throw new Error("Module vocal introuvable (" + (lastErr?.message || "réseau") + ")");
+}
+loadSDK().then(() => setStatus("idle", "Prêt")).catch(e => addMsg("SYS", e.message, "sys"));
 
 const COLORS = {
   SPECTRE: "--core", Analyse: "--analyse", Pulsion: "--pulsion",
@@ -200,6 +225,7 @@ async function start(){
   linkBtn.disabled = true;
   try {
     // Pas de demande de micro séparée : sur iPhone, l'audio doit démarrer directement depuis le toucher.
+    if (!Conversation) await loadSDK();
     conv = await Conversation.startSession({
       agentId,
       connectionType: "websocket",
