@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sunday Plan Battle</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<!--
+  Idea Battle Royale — visual mode template.
+
+  To render a tournament: replace the JSON inside <script id="battle-data"> below
+  with the tournament's data, keeping the same shape as the example. Set <title>
+  to a 2-4 word name for the tournament. Everything else renders from the data.
+
+  Fighter "out" values: "round1", "storm1", "storm2", "final" (the losing
+  finalist) or null (the champion). "betCheck": "plausible" | "uncertain" |
+  "doubtful". Storm "verdict": "bends" | "breaks". Bet "risk": "high" | "medium"
+  | "low". Leave "storms" empty for --quick.
+
+  For another language, set "lang" and fill "labels" with any of the keys of
+  LABELS in the script at the bottom (the values given there are the English
+  defaults).
+-->
+<style>
+/* Layout: a verdict-first fight card. The super idea opens the page; the rounds follow as the record of how it won, narrowing like the zone. */
+:root {
+  --bg: #ECEFF3;
+  --surface: #FFFFFF;
+  --sunk: #E1E5EB;
+  --ink: #131821;
+  --muted: #566073;
+  --line: #D2D8E1;
+  --gold: #8F5A00;
+  --gold-fill: #D4901A;
+  --gold-soft: #FAEED5;
+  --storm: #4F3FBF;
+  --storm-soft: #E9E6FF;
+  --out: #A9341A;
+  --out-soft: #FAE4DD;
+  --ok: #1F6F4A;
+  --ok-soft: #DDF1E6;
+  --display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", Impact, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --radius: 12px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1218; --surface: #161B24; --sunk: #222937; --ink: #E8ECF2; --muted: #9AA4B5; --line: #2A3242;
+    --gold: #F2BC4B; --gold-fill: #E0A12C; --gold-soft: #2D2410; --storm: #A99CFF; --storm-soft: #211C3E;
+    --out: #FF8A6B; --out-soft: #3A1D16; --ok: #6FD3A0; --ok-soft: #13301F;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1218; --surface: #161B24; --sunk: #222937; --ink: #E8ECF2; --muted: #9AA4B5; --line: #2A3242;
+  --gold: #F2BC4B; --gold-fill: #E0A12C; --gold-soft: #2D2410; --storm: #A99CFF; --storm-soft: #211C3E;
+  --out: #FF8A6B; --out-soft: #3A1D16; --ok: #6FD3A0; --ok-soft: #13301F;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 15px/1.55 var(--body);
+}
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-block: 36px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 56px;
+}
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+p { margin: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+
+/* Type scale */
+.eyebrow, .label, .chip, .num, .hud-label, th {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.eyebrow { color: var(--muted); }
+.display { font-family: var(--display); font-weight: 900; text-transform: uppercase; line-height: .92; letter-spacing: .005em; }
+.num { font-variant-numeric: tabular-nums; letter-spacing: 0; text-transform: none; font-size: 13px; font-weight: 500; }
+
+/* Masthead */
+.masthead { display: grid; gap: 18px; }
+.masthead h1 { font-size: clamp(2.3rem, 6.4vw, 4.4rem); max-width: 18ch; }
+.hud { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.hud li { display: flex; align-items: center; gap: 8px; }
+.hud li + li::before { content: "→"; color: var(--muted); font-family: var(--mono); }
+.hud-stage {
+  display: grid; gap: 2px; padding: 8px 14px 9px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+  min-width: 76px;
+}
+.hud-count { font-family: var(--display); font-weight: 900; font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.hud-label { color: var(--muted); font-size: 10.5px; }
+.hud-stage.is-winner { border-color: var(--gold-fill); background: var(--gold-soft); }
+.hud-stage.is-winner .hud-count { color: var(--gold); }
+.hud-stage.is-storm .hud-label { color: var(--storm); }
+
+/* The super idea */
+.champion {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--gold-fill);
+  border-radius: var(--radius);
+  padding: clamp(20px, 4vw, 40px);
+  display: grid;
+  gap: 32px;
+}
+.champion-head { display: grid; gap: 12px; }
+.champion-head .eyebrow { color: var(--gold); }
+.champion-name { font-size: clamp(2.8rem, 9vw, 5.6rem); }
+.one-liner { font-size: clamp(1.05rem, 2.2vw, 1.25rem); line-height: 1.5; max-width: 62ch; }
+.champion-body { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 32px 48px; }
+.stack { display: grid; gap: 22px; align-content: start; min-width: 0; }
+.block { display: grid; gap: 8px; min-width: 0; }
+.label { color: var(--muted); }
+.how { counter-reset: how; display: grid; gap: 10px; }
+.how li { counter-increment: how; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.how li::before { content: counter(how); font-family: var(--display); font-weight: 900; font-size: 1.35rem; color: var(--gold); line-height: 1; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 8px 4px; border-radius: 6px;
+  background: var(--sunk); color: var(--ink);
+  font-size: 10.5px; line-height: 1.3; white-space: nowrap;
+}
+.chip.loot { display: inline-block; background: var(--gold-soft); color: var(--gold); text-transform: none; letter-spacing: 0; font-size: 12.5px; white-space: normal; }
+.chip.loot small { color: var(--muted); font-size: inherit; margin-left: 6px; }
+.chip.gold { background: var(--gold-soft); color: var(--gold); }
+.chip.out { background: var(--out-soft); color: var(--out); }
+.chip.storm { background: var(--storm-soft); color: var(--storm); }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+
+/* Score bars, drawn to one 0-10 scale */
+.scores { display: grid; gap: 12px; }
+.score-row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 34px; gap: 12px; align-items: center; }
+.score-row .label { font-size: 10.5px; }
+.track { position: relative; height: 10px; border-radius: 99px; background: var(--sunk); overflow: hidden; }
+.fill { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: var(--muted); }
+.score-row.is-super .fill { background: var(--gold-fill); }
+.score-row.is-bar .fill { background: transparent; border: 1.5px dashed var(--muted); }
+.score-row.is-super .num { color: var(--gold); font-weight: 600; }
+.scale { display: grid; grid-template-columns: 92px minmax(0, 1fr) 34px; gap: 12px; }
+.scale-ticks { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+.score { display: inline-grid; grid-template-columns: 64px auto; gap: 8px; align-items: center; }
+.score .track { height: 7px; }
+
+.facts { display: grid; gap: 14px; padding-top: 18px; border-top: 1px solid var(--line); }
+.fact { display: grid; gap: 4px; }
+.fact .chip { justify-self: start; }
+
+.moves { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding-top: 28px; border-top: 1px solid var(--line); }
+.move { display: grid; gap: 6px; align-content: start; padding: 14px 16px 16px; background: var(--sunk); border-radius: 10px; min-width: 0; }
+.move .label { color: var(--ink); font-weight: 500; }
+.move:first-child { background: var(--gold-soft); }
+.move:first-child .label { color: var(--gold); }
+
+/* Sections of the fight log */
+.section { display: grid; gap: 18px; min-width: 0; }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; padding-bottom: 10px; border-bottom: 2px solid var(--ink); }
+.section-head h2 { font-size: clamp(1.7rem, 4vw, 2.3rem); }
+.section-head .eyebrow { font-size: 11px; }
+.log-title { display: grid; gap: 6px; }
+.log-title h2 { font-size: clamp(2.2rem, 6vw, 3.4rem); }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 40px; }
+.three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+
+dl.sheet { margin: 0; display: grid; grid-template-columns: 128px minmax(0, 1fr); }
+dl.sheet dt, dl.sheet dd { margin: 0; padding: 11px 0; border-bottom: 1px solid var(--line); }
+dl.sheet dt { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding-right: 12px; padding-top: 13px; }
+dl.sheet dd { display: grid; gap: 6px; min-width: 0; }
+.chain { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: baseline; }
+.chain span + span::before { content: "→ "; color: var(--muted); }
+.assumed { color: var(--muted); font-style: italic; }
+
+.rubric-bar { display: flex; height: 12px; border-radius: 99px; overflow: hidden; gap: 2px; background: var(--surface); }
+.rubric-bar span { display: block; height: 100%; background: var(--ink); }
+.rubric-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; }
+.rubric-legend li { display: flex; align-items: center; gap: 6px; }
+.rubric-legend i { width: 10px; height: 10px; border-radius: 3px; background: var(--ink); display: inline-block; }
+
+/* Roster */
+.roster { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 14px; }
+.card {
+  display: grid; gap: 12px; align-content: start;
+  padding: 16px 18px 18px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--radius); min-width: 0;
+}
+.card.is-champion { border-color: var(--gold-fill); box-shadow: 0 0 0 1px var(--gold-fill) inset; }
+.card-top { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.letter {
+  width: 38px; height: 38px; display: grid; place-items: center;
+  border-radius: 8px; background: var(--sunk);
+  font-family: var(--display); font-weight: 900; font-size: 1.45rem; line-height: 1;
+}
+.card.is-champion .letter { background: var(--gold-soft); color: var(--gold); }
+.card .archetype { color: var(--muted); }
+.card h3 { font-size: 1.6rem; }
+.card.is-out h3 { color: var(--muted); }
+.card p { color: var(--ink); }
+.bet { display: grid; gap: 6px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 14px; }
+.bet-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.trail { display: flex; flex-wrap: wrap; gap: 4px 8px; font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.trail b { color: var(--ink); font-weight: 500; }
+.trail span + span::before { content: "→ "; }
+
+/* Tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.wide { min-width: 720px; }
+th { text-align: left; font-weight: 500; color: var(--muted); padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 10.5px; }
+td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td.idea { font-weight: 600; white-space: nowrap; }
+td.idea .letter-inline { font-family: var(--display); font-weight: 900; font-size: 1.1rem; color: var(--muted); margin-right: 8px; }
+tr.is-out td { color: var(--muted); }
+tr.is-out td.idea { text-decoration: line-through; text-decoration-color: var(--out); text-decoration-thickness: 1.5px; }
+td.nowrap { white-space: nowrap; }
+
+/* Kill feed */
+.feed { display: grid; gap: 6px; }
+.feed li {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline;
+  padding: 9px 12px; border-radius: 8px; background: var(--out-soft);
+}
+.feed .who { font-weight: 600; }
+.feed .why { color: var(--ink); }
+
+/* Loot */
+.loot-list { display: grid; gap: 10px; }
+.loot-list li { display: grid; gap: 6px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.loot-line { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.loot-line .to { font-weight: 600; }
+.v2 { color: var(--muted); }
+.v2 b { color: var(--ink); font-weight: 600; }
+
+/* Storm */
+.storm-band { display: grid; gap: 16px; padding: clamp(18px, 3vw, 28px); border-radius: var(--radius); background: var(--storm-soft); }
+.storm-band .eyebrow { color: var(--storm); }
+.storm-scenario { font-size: clamp(1.6rem, 4.4vw, 2.5rem); color: var(--ink); max-width: 24ch; }
+.storm-band .table-wrap { border-color: transparent; }
+
+/* Duel */
+.duel { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 16px; align-items: stretch; }
+.vs { align-self: center; font-family: var(--display); font-weight: 900; font-size: 1.8rem; color: var(--muted); }
+.corner { display: grid; gap: 14px; align-content: start; padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); min-width: 0; }
+.corner.is-champion { border-color: var(--gold-fill); box-shadow: 0 0 0 1px var(--gold-fill) inset; }
+.corner-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.corner h3 { font-size: 1.7rem; }
+.verdict-line { padding: 14px 16px; border-radius: 10px; background: var(--gold-soft); }
+.verdict-line b { color: var(--gold); }
+
+footer { color: var(--muted); font-family: var(--mono); font-size: 11.5px; letter-spacing: .04em; border-top: 1px solid var(--line); padding-top: 16px; }
+
+a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold-fill); outline-offset: 2px; }
+
+@media (max-width: 900px) {
+  .roster { --cols: 2 !important; }
+  .three { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .champion-body, .two { grid-template-columns: minmax(0, 1fr); }
+  .moves { grid-template-columns: minmax(0, 1fr); }
+  .duel { grid-template-columns: minmax(0, 1fr); }
+  .vs { justify-self: center; }
+}
+@media (max-width: 560px) {
+  .page { gap: 44px; padding-block: 24px 56px; }
+  .roster { --cols: 1 !important; }
+  dl.sheet { grid-template-columns: minmax(0, 1fr); }
+  dl.sheet dt { border-bottom: 0; padding-bottom: 0; }
+  .score-row, .scale { grid-template-columns: 78px minmax(0, 1fr) 30px; gap: 10px; }
+  .hud, .hud li { gap: 4px; }
+  .hud-stage { min-width: 0; padding: 7px 9px 8px; }
+  .hud-count { font-size: 1.6rem; }
+  .hud-label { font-size: 9.5px; letter-spacing: .05em; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fill { animation: grow .7s cubic-bezier(.2, .7, .2, 1) both; transform-origin: left; }
+  @keyframes grow { from { transform: scaleX(.001); } to { transform: scaleX(1); } }
+}
+</style>
+</head>
+<body>
+<main class="page" id="app"></main>
+
+<script type="application/json" id="battle-data">
+{
+  "lang": "en",
+  "title": "First 100 users for a meal-planning app",
+  "depth": "Default depth",
+  "labels": {},
+  "recon": {
+    "asked": "How do I get my first 100 users for my meal-planning app?",
+    "goalChain": ["100 users", "enough people to see whether they stay", "decide whether the app deserves more of my time"],
+    "reframes": ["Find 100 people who would miss the app", "Find one channel that brings 10 users a week"],
+    "unknowns": [{ "question": "Does the app keep people after week one?", "answer": "Assumed: yes, retention is decent" }],
+    "knownAnswers": ["Launch on Product Hunt", "Ask friends and family", "Run ads"]
+  },
+  "arena": {
+    "problem": "Reach 100 active users in 8 weeks with no marketing budget",
+    "constraints": [
+      { "text": "Solo founder", "assumed": false },
+      { "text": "About 5h a week", "assumed": true },
+      { "text": "App live on iOS and Android", "assumed": true }
+    ],
+    "dealbreakers": ["Paid ads", "More than 5h a week"],
+    "rubric": [
+      { "name": "Impact", "weight": 30 },
+      { "name": "Feasibility", "weight": 30 },
+      { "name": "Speed", "weight": 25 },
+      { "name": "Originality", "weight": 15 }
+    ],
+    "bar": { "idea": "Launch on Product Hunt", "score": 5.4, "why": "A one-day spike, then nothing" }
+  },
+  "pickedBecause": "Growth problem on no budget: the Hacker and the User's Advocate find unfair channels and real moments of need.",
+  "fighters": [
+    {
+      "id": "A", "archetype": "Pragmatist", "idea": "Community Helper",
+      "pitch": "Answer meal-prep questions every day in Reddit and Facebook groups, with the app link in your profile.",
+      "bet": "Groups tolerate a helpful member with a link.", "betCheck": "plausible",
+      "fatal": "Self-promotion gets banned fast.", "secondOrder": "Effort resets every day; nothing compounds.",
+      "rebuttal": "Value first, link only in the profile.", "r1": 6.6,
+      "out": "storm1", "reason": "Can't survive without daily time.", "loot": "Value-first posting"
+    },
+    {
+      "id": "B", "archetype": "Visionary", "idea": "Grocery Partner",
+      "pitch": "Get the app featured in a supermarket chain's loyalty program.",
+      "bet": "A chain would partner with a 0-user app.", "betCheck": "doubtful",
+      "fatal": "Months of sales cycles.", "secondOrder": "No leverage at 0 users.",
+      "rebuttal": "", "r1": 4.1,
+      "out": "round1", "reason": "Far too slow for an 8-week goal.", "loot": "Retail credibility"
+    },
+    {
+      "id": "C", "archetype": "Contrarian", "idea": "The Sunday Plan",
+      "pitch": "Don't market the app. Market a free weekly meal-plan email; the app is the upsell.",
+      "bet": "People subscribe to a free plan from an unknown sender.", "betCheck": "uncertain",
+      "fatal": "Two products to maintain.", "secondOrder": "Builds an email list, not app users.",
+      "rebuttal": "The email is generated from the app's own recipes.", "r1": 7.4,
+      "out": null, "reason": "", "loot": ""
+    },
+    {
+      "id": "D", "archetype": "Minimalist", "idea": "100 DMs",
+      "pitch": "Personally onboard 100 people from your own network, one by one.",
+      "bet": "Your network contains the target audience.", "betCheck": "doubtful",
+      "fatal": "Friends aren't the target.", "secondOrder": "Polite installs, early churn.",
+      "rebuttal": "Ask each person for 2 referrals.", "r1": 5.9,
+      "out": "round1", "reason": "Doesn't reach the real audience.", "loot": "Personal onboarding"
+    },
+    {
+      "id": "E", "archetype": "User's Advocate", "idea": "Fridge Photo",
+      "pitch": "Aim at the 6pm \"what's for dinner\" panic: snap your fridge, get tonight's meal.",
+      "bet": "The panic moment drives installs.", "betCheck": "plausible",
+      "fatal": "Needs a photo feature first.", "secondOrder": "",
+      "rebuttal": "Start with a manual version.", "r1": 6.4,
+      "out": "final", "reason": "Needs a build before the first user sees it.", "loot": "The 6pm panic moment"
+    },
+    {
+      "id": "F", "archetype": "Hacker", "idea": "Creator Swap",
+      "pitch": "Give food micro-creators free white-label meal plans built in the app.",
+      "bet": "Creators share a free tool with their followers.", "betCheck": "uncertain",
+      "fatal": "Creators want to be paid.", "secondOrder": "Cold outreach at 0 users.",
+      "rebuttal": "", "r1": 5.7,
+      "out": "round1", "reason": "No leverage yet.", "loot": "Creators share results"
+    }
+  ],
+  "lootDrops": [
+    { "to": "C", "from": "D", "item": "Personal onboarding", "v2": "Every new subscriber gets a personal reply asking about their diet goal." },
+    { "to": "E", "from": "F", "item": "Creators share results", "v2": "Shareable \"tonight's dinner\" cards." }
+  ],
+  "storms": [
+    {
+      "scenario": "Your time drops to 2h a week",
+      "results": [
+        { "id": "C", "adaptation": "One issue a week, generated from the app in under an hour.", "verdict": "bends", "score": 7.9 },
+        { "id": "E", "adaptation": "Ships a no-code version on top of the app's search.", "verdict": "bends", "score": 6.5 },
+        { "id": "A", "adaptation": "Daily presence is no longer possible.", "verdict": "breaks", "score": 5.2 }
+      ]
+    }
+  ],
+  "duel": {
+    "a": "C", "b": "E", "scoreA": 7.9, "scoreB": 6.5,
+    "forOpponentA": "The panic moment is more emotional and more shareable.",
+    "forOpponentB": "The Sunday Plan compounds every week for one hour of work.",
+    "winsA": "Testable this Sunday, no build needed.",
+    "winsB": "It hooks people at the moment they need the app most.",
+    "champion": "C",
+    "decidingFactor": "It can be tested this week, while Fridge Photo needs a build before the first user sees it."
+  },
+  "superIdea": {
+    "name": "The Sunday Plan",
+    "oneLiner": "A free Sunday email with a ready-to-cook weekly plan built from the app, shared in meal-prep communities, with a personal reply to every new subscriber and a \"panic button\" link for weeknight dinners.",
+    "how": [
+      "Every Sunday, build next week's plan from the app's own recipes and send it as a free email.",
+      "Share each issue in meal-prep communities with the full plan in the post and the link at the bottom.",
+      "Reply personally to every new subscriber and ask about their diet goal.",
+      "Add a \"panic button\" link that opens tonight's dinner in the app."
+    ],
+    "builtFrom": [
+      { "item": "Personal onboarding", "from": "100 DMs" },
+      { "item": "The 6pm panic moment", "from": "Fridge Photo" },
+      { "item": "Value-first posting", "from": "Community Helper" }
+    ],
+    "whyWon": "It compounds every week, fits in two hours, and can be tested this Sunday.",
+    "score": 8.4,
+    "championScore": 7.9,
+    "bets": [
+      { "assumption": "People subscribe to a free plan from an unknown sender", "test": "Post plan #1 in 3 communities, aim for 30 sign-ups in 7 days", "risk": "high" },
+      { "assumption": "Subscribers click through to the app", "test": "Count clicks on \"cook this week in the app\" in issue #2, aim for 20%", "risk": "medium" },
+      { "assumption": "One issue takes under an hour", "test": "Time the first two issues", "risk": "low" }
+    ],
+    "premortem": [
+      { "risk": "The plans feel generic", "safeguard": "Group subscribers by the diet goal they replied with" },
+      { "risk": "Communities see it as spam", "safeguard": "Full plan in the post, link only at the bottom" },
+      { "risk": "You skip a few Sundays", "safeguard": "Write 4 issues ahead before announcing" }
+    ],
+    "gate": "Fewer than 30 subscribers after 3 issues: switch to Fridge Photo as the hook.",
+    "confidence": "medium",
+    "confidenceWhy": "The format works in other niches; nobody knows yet whether this audience opens an email from an app maker.",
+    "flip": "If fewer than 10% of new users are still active after a week, acquisition isn't the problem: fix onboarding first.",
+    "moves": [
+      { "when": "Today", "what": "Write Sunday Plan #1 from the app's own recipes.", "testsRiskiestBet": true },
+      { "when": "This week", "what": "Share it in 3 meal-prep communities, the full plan in the post, the link at the bottom." },
+      { "when": "This month", "what": "Reply personally to every subscriber and ask about their diet goal." }
+    ],
+    "runnerUp": { "name": "Fridge Photo", "when": "The better choice once the app has a photo feature and you have more than 2h a week." }
+  }
+}
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var LABELS = {
+    kicker: "Idea Battle Royale",
+    stageDrop: "Drop", stageRound1: "Round 1", stageStorm: "Storm", stageFinal: "Final", stageChampion: "Champion",
+    superIdea: "The super idea", how: "How it works", builtFrom: "Built from", from: "from", whyWon: "Why it won",
+    scores: "Final scores", superScore: "Super idea", championScore: "Champion", theBar: "The Bar",
+    confidence: "Confidence", high: "High", medium: "Medium", low: "Low",
+    gate: "Decision gate", flip: "What would change the verdict", runnerUp: "Runner-up worth remembering",
+    moves: "Your first 3 moves", testsBet: "Tests the riskiest bet",
+    beforeYouCommit: "Before you commit", bets: "What it bets on", bet: "Bet", test: "Cheapest test", risk: "Risk",
+    premortem: "Pre-mortem", failure: "How it could fail", safeguard: "Safeguard",
+    theFight: "The fight", theFightSub: "How the super idea got here", beforeDrop: "Before the drop",
+    recon: "Reconnaissance", asked: "You asked", goal: "The real goal", reframes: "Reframes", unknowns: "Unknowns", known: "Known answers",
+    arena: "The Arena", problem: "Problem", constraints: "Constraints", assumed: "assumed", dealbreakers: "Dealbreakers", rubric: "Rubric",
+    drop: "The Drop", fighters: "fighters",
+    plausible: "Plausible", uncertain: "Uncertain", doubtful: "Doubtful",
+    round1: "Round 1: The Attack", round1Sub: "Judged blind on the locked rubric",
+    idea: "Idea", fatal: "Fatal flaw", secondOrder: "Second-order", rebuttal: "Rebuttal", score: "Score",
+    out: "Out", eliminated: "eliminated",
+    looting: "The Looting", looted: "takes",
+    storm: "The Storm", adapts: "How it adapts", bends: "Bends", breaks: "Breaks",
+    duel: "The Final Duel", vs: "vs", forOpponent: "Best case for the opponent", stillWins: "Why it still wins",
+    champion: "Champion", finalist: "Finalist", decidingFactor: "Deciding factor",
+    leaderboard: "Leaderboard", rank: "Rank", fighter: "Fighter", outIn: "Out in", best: "Best score", none: "—",
+    footer: "Rubric and scoring scale locked before the drop · ideas judged blind, by letter"
+  };
+
+  var D = JSON.parse(document.getElementById("battle-data").textContent);
+  var L = Object.assign({}, LABELS, D.labels || {});
+  if (D.lang) document.documentElement.lang = D.lang;
+
+  function h(tag, props) {
+    var el = document.createElement(tag);
+    if (props) {
+      Object.keys(props).forEach(function (k) {
+        var v = props[k];
+        if (v === null || v === undefined || v === false) return;
+        if (k === "class") el.className = v;
+        else el.setAttribute(k, v);
+      });
+    }
+    for (var i = 2; i < arguments.length; i++) append(el, arguments[i]);
+    return el;
+  }
+  function append(el, kid) {
+    if (kid === null || kid === undefined || kid === false || kid === "") return;
+    if (Array.isArray(kid)) { kid.forEach(function (k) { append(el, k); }); return; }
+    el.append(kid instanceof Node ? kid : String(kid));
+  }
+  function fmt(n) { return (Math.round(n * 10) / 10).toFixed(1); }
+  function clamp(n) { return Math.max(0, Math.min(10, n)); }
+  function track(score) {
+    return h("span", { class: "track", "aria-hidden": "true" },
+      h("span", { class: "fill", style: "width:" + clamp(score) * 10 + "%" }));
+  }
+  function score(n) {
+    if (typeof n !== "number") return L.none;
+    return h("span", { class: "score" }, track(n), h("span", { class: "num" }, fmt(n)));
+  }
+  function section(title, sub, body) {
+    return h("section", { class: "section" },
+      h("div", { class: "section-head" }, h("h2", { class: "display" }, title), sub ? h("span", { class: "eyebrow" }, sub) : null),
+      body);
+  }
+  function table(headers, rows, wide) {
+    return h("div", { class: "table-wrap" },
+      h("table", { class: wide ? "wide" : null },
+        h("thead", null, h("tr", null, headers.map(function (t) { return h("th", { scope: "col" }, t); }))),
+        h("tbody", null, rows)));
+  }
+
+  var fighters = D.fighters || [];
+  var storms = D.storms || [];
+  var byId = {};
+  fighters.forEach(function (f) { byId[f.id] = f; });
+  var S = D.superIdea || {};
+  var arena = D.arena || {};
+  var bar = arena.bar || {};
+
+  function stormIndex(out) { return out && out.indexOf("storm") === 0 ? parseInt(out.slice(5), 10) || 1 : 0; }
+  function stageName(out) {
+    if (out === "round1") return L.stageRound1;
+    if (out === "final") return L.stageFinal;
+    var i = stormIndex(out);
+    if (i) return storms.length > 1 ? L.stageStorm + " " + i : L.stageStorm;
+    return L.none;
+  }
+  function scoresOf(f) {
+    var trail = [];
+    if (typeof f.r1 === "number") trail.push({ stage: "R1", value: f.r1 });
+    storms.forEach(function (s, i) {
+      (s.results || []).forEach(function (r) {
+        if (r.id === f.id) trail.push({ stage: storms.length > 1 ? L.stageStorm + " " + (i + 1) : L.stageStorm, value: r.score });
+      });
+    });
+    var d = D.duel || {};
+    if (d.a === f.id && typeof d.scoreA === "number") trail.push({ stage: L.stageFinal, value: d.scoreA });
+    if (d.b === f.id && typeof d.scoreB === "number") trail.push({ stage: L.stageFinal, value: d.scoreB });
+    return trail;
+  }
+  function best(f) { return scoresOf(f).reduce(function (m, s) { return Math.max(m, s.value); }, 0); }
+  function statusChip(f) {
+    if (f.out === null || f.out === undefined) return h("span", { class: "chip gold" }, L.champion);
+    if (f.out === "final") return h("span", { class: "chip" }, L.finalist);
+    if (stormIndex(f.out)) return h("span", { class: "chip storm" }, L.out + " · " + stageName(f.out));
+    return h("span", { class: "chip out" }, L.out + " · " + stageName(f.out));
+  }
+  function betChip(v) {
+    if (!v) return null;
+    var cls = v === "plausible" ? "chip ok" : v === "doubtful" ? "chip out" : "chip";
+    return h("span", { class: cls }, L[v] || v);
+  }
+  function riskChip(v) {
+    var cls = v === "high" ? "chip out" : v === "low" ? "chip ok" : "chip";
+    return h("span", { class: cls }, L[v] || v);
+  }
+
+  var app = document.getElementById("app");
+
+  /* Masthead and the zone counter */
+  var stages = [{ label: L.stageDrop, count: fighters.length }];
+  stages.push({ label: L.stageRound1, count: fighters.filter(function (f) { return f.out !== "round1"; }).length });
+  storms.forEach(function (s, i) {
+    stages.push({
+      label: storms.length > 1 ? L.stageStorm + " " + (i + 1) : L.stageStorm, storm: true,
+      count: fighters.filter(function (f) { return f.out !== "round1" && !(stormIndex(f.out) && stormIndex(f.out) <= i + 1); }).length
+    });
+  });
+  stages.push({ label: L.stageChampion, count: 1, winner: true });
+
+  app.append(h("header", { class: "masthead" },
+    h("p", { class: "eyebrow" }, L.kicker + (D.depth ? " · " + D.depth : "")),
+    h("h1", { class: "display" }, D.title),
+    h("ol", { class: "hud" }, stages.map(function (s) {
+      return h("li", null, h("div", { class: "hud-stage" + (s.winner ? " is-winner" : "") + (s.storm ? " is-storm" : "") },
+        h("span", { class: "hud-count" }, s.count), h("span", { class: "hud-label" }, s.label)));
+    }))));
+
+  /* The super idea */
+  var scoreRows = [
+    { label: L.superScore, value: S.score, cls: "is-super" },
+    { label: L.championScore, value: S.championScore, cls: "" },
+    { label: L.theBar, value: bar.score, cls: "is-bar" }
+  ].filter(function (r) { return typeof r.value === "number"; });
+
+  var runner = S.runnerUp || {};
+  app.append(h("section", { class: "champion", "aria-labelledby": "super-name" },
+    h("div", { class: "champion-head" },
+      h("p", { class: "eyebrow" }, L.superIdea),
+      h("h2", { class: "display champion-name", id: "super-name" }, S.name),
+      h("p", { class: "one-liner" }, S.oneLiner)),
+    h("div", { class: "champion-body" },
+      h("div", { class: "stack" },
+        h("div", { class: "block" }, h("span", { class: "label" }, L.how),
+          h("ol", { class: "how" }, (S.how || []).map(function (t) { return h("li", null, h("span", null, t)); }))),
+        (S.builtFrom || []).length ? h("div", { class: "block" }, h("span", { class: "label" }, L.builtFrom),
+          h("div", { class: "chips" }, S.builtFrom.map(function (b) {
+            return h("span", { class: "chip loot" }, b.item, h("small", null, L.from + " " + b.from));
+          }))) : null,
+        S.whyWon ? h("div", { class: "block" }, h("span", { class: "label" }, L.whyWon), h("p", null, S.whyWon)) : null),
+      h("div", { class: "stack" },
+        h("div", { class: "block" }, h("span", { class: "label" }, L.scores),
+          h("div", { class: "scores" },
+            scoreRows.map(function (r) {
+              return h("div", { class: "score-row " + r.cls }, h("span", { class: "label" }, r.label), track(r.value), h("span", { class: "num" }, fmt(r.value)));
+            }),
+            h("div", { class: "scale", "aria-hidden": "true" }, h("span"),
+              h("span", { class: "scale-ticks" }, h("span", null, "0"), h("span", null, "5"), h("span", null, "10")), h("span")))),
+        h("div", { class: "facts" },
+          S.confidence ? h("div", { class: "fact" }, h("span", { class: "label" }, L.confidence),
+            h("span", { class: "chip " + (S.confidence === "high" ? "ok" : S.confidence === "low" ? "out" : "gold") }, L[S.confidence] || S.confidence),
+            S.confidenceWhy ? h("p", null, S.confidenceWhy) : null) : null,
+          S.gate ? h("div", { class: "fact" }, h("span", { class: "label" }, L.gate), h("p", null, S.gate)) : null,
+          S.flip ? h("div", { class: "fact" }, h("span", { class: "label" }, L.flip), h("p", null, S.flip)) : null,
+          runner.name ? h("div", { class: "fact" }, h("span", { class: "label" }, L.runnerUp), h("p", null, h("b", null, runner.name), runner.when ? " — " + runner.when : "")) : null))),
+    (S.moves || []).length ? h("div", null,
+      h("p", { class: "label", style: "margin-bottom:10px" }, L.moves),
+      h("ol", { class: "moves" }, S.moves.map(function (m) {
+        return h("li", { class: "move" }, h("span", { class: "label" }, m.when + (m.testsRiskiestBet ? " · " + L.testsBet : "")), h("span", null, m.what));
+      }))) : null));
+
+  /* Before you commit: bets and pre-mortem */
+  if ((S.bets || []).length || (S.premortem || []).length) {
+    app.append(section(L.beforeYouCommit, null,
+      h("div", { class: "stack" },
+        (S.bets || []).length ? h("div", { class: "block" }, h("span", { class: "label" }, L.bets),
+          table([L.bet, L.test, L.risk], S.bets.map(function (b) {
+            return h("tr", null, h("td", null, b.assumption), h("td", null, b.test), h("td", { class: "nowrap" }, riskChip(b.risk)));
+          }))) : null,
+        (S.premortem || []).length ? h("div", { class: "block" }, h("span", { class: "label" }, L.premortem),
+          table([L.failure, L.safeguard], S.premortem.map(function (p) {
+            return h("tr", null, h("td", null, p.risk), h("td", null, p.safeguard));
+          }))) : null)));
+  }
+
+  /* The fight log */
+  app.append(h("div", { class: "log-title" }, h("p", { class: "eyebrow" }, L.theFightSub), h("h2", { class: "display" }, L.theFight)));
+
+  var R = D.recon || {};
+  var reconRows = [];
+  function sheetRow(dt, dd) { if (dd !== null && dd !== undefined && dd !== "") reconRows.push(h("dt", null, dt), h("dd", null, dd)); }
+  sheetRow(L.asked, R.asked);
+  if ((R.goalChain || []).length) sheetRow(L.goal, h("span", { class: "chain" }, R.goalChain.map(function (g) { return h("span", null, g); })));
+  if ((R.reframes || []).length) sheetRow(L.reframes, R.reframes.map(function (r) { return h("span", null, r); }));
+  if ((R.unknowns || []).length) sheetRow(L.unknowns, R.unknowns.map(function (u) {
+    return h("span", null, u.question, u.answer ? h("span", { class: "assumed" }, " " + u.answer) : null);
+  }));
+  if ((R.knownAnswers || []).length) sheetRow(L.known, h("span", { class: "chips" }, R.knownAnswers.map(function (k) { return h("span", { class: "chip" }, k); })));
+  var reconBlock = reconRows.length ? h("div", { class: "block" }, h("span", { class: "label" }, L.recon), h("dl", { class: "sheet" }, reconRows)) : null;
+
+  var rubric = arena.rubric || [];
+  var shades = [100, 72, 50, 32, 20];
+  var arenaRows = [];
+  function arenaRow(dt, dd) { if (dd !== null && dd !== undefined && dd !== "") arenaRows.push(h("dt", null, dt), h("dd", null, dd)); }
+  arenaRow(L.problem, arena.problem);
+  if ((arena.constraints || []).length) arenaRow(L.constraints, arena.constraints.map(function (c) {
+    return h("span", null, c.text, c.assumed ? h("span", { class: "assumed" }, " (" + L.assumed + ")") : null);
+  }));
+  if ((arena.dealbreakers || []).length) arenaRow(L.dealbreakers, h("span", { class: "chips" }, arena.dealbreakers.map(function (d) { return h("span", { class: "chip out" }, d); })));
+  if (rubric.length) arenaRow(L.rubric, [
+    h("span", { class: "rubric-bar", "aria-hidden": "true" }, rubric.map(function (r, i) {
+      return h("span", { style: "flex:" + r.weight + ";opacity:" + shades[i % shades.length] / 100 });
+    })),
+    h("ul", { class: "rubric-legend" }, rubric.map(function (r, i) {
+      return h("li", null, h("i", { style: "opacity:" + shades[i % shades.length] / 100 }), r.name + " " + r.weight + "%");
+    }))
+  ]);
+  if (bar.idea) arenaRow(L.theBar, [h("span", null, bar.idea, bar.why ? h("span", { class: "assumed" }, " " + bar.why) : null), score(bar.score)]);
+  var arenaBlock = h("div", { class: "block" }, h("span", { class: "label" }, L.arena), h("dl", { class: "sheet" }, arenaRows));
+
+  app.append(section(L.beforeDrop, null, h("div", { class: reconBlock ? "two" : "" }, reconBlock, arenaBlock)));
+
+  /* The drop: the roster */
+  var n = fighters.length;
+  var cols = n % 4 === 0 && n > 4 ? 4 : n === 4 ? 2 : 3;
+  app.append(section(L.drop, n + " " + L.fighters, [
+    h("div", { class: "roster", style: "--cols:" + cols }, fighters.map(function (f) {
+      var isChamp = f.out === null || f.out === undefined;
+      return h("article", { class: "card" + (isChamp ? " is-champion" : "") + (f.out && f.out !== "final" ? " is-out" : "") },
+        h("div", { class: "card-top" },
+          h("span", { class: "letter" }, f.id),
+          h("span", { class: "eyebrow archetype" }, f.archetype),
+          statusChip(f)),
+        h("h3", { class: "display" }, f.idea),
+        h("p", null, f.pitch),
+        f.bet ? h("div", { class: "bet" },
+          h("div", { class: "bet-head" }, h("span", { class: "label" }, L.bet), betChip(f.betCheck)),
+          h("span", null, f.bet)) : null,
+        h("div", { class: "trail" }, scoresOf(f).map(function (s) { return h("span", null, s.stage + " ", h("b", null, fmt(s.value))); })));
+    })),
+    D.pickedBecause ? h("p", { class: "assumed" }, D.pickedBecause) : null
+  ]));
+
+  /* Round 1 */
+  var r1Sorted = fighters.slice().sort(function (a, b) { return (b.r1 || 0) - (a.r1 || 0); });
+  var r1Out = fighters.filter(function (f) { return f.out === "round1"; });
+  var hasSecond = fighters.some(function (f) { return f.secondOrder; });
+  var r1Headers = [L.idea, L.fatal].concat(hasSecond ? [L.secondOrder] : []).concat([L.rebuttal, L.score]);
+  app.append(section(L.round1, L.round1Sub, [
+    table(r1Headers, r1Sorted.map(function (f) {
+      return h("tr", { class: f.out === "round1" ? "is-out" : null },
+        h("td", { class: "idea" }, h("span", { class: "letter-inline" }, f.id), f.idea),
+        h("td", null, f.fatal || L.none),
+        hasSecond ? h("td", null, f.secondOrder || L.none) : null,
+        h("td", null, f.rebuttal || L.none),
+        h("td", { class: "nowrap" }, score(f.r1)));
+    }), true),
+    r1Out.length ? h("ul", { class: "feed", "aria-label": L.out }, r1Out.map(function (f) {
+      return h("li", null, h("span", { class: "chip out" }, L.out), h("span", null, h("span", { class: "who" }, f.idea), h("span", { class: "why" }, " — " + f.reason)));
+    })) : null
+  ]));
+
+  /* The looting */
+  if ((D.lootDrops || []).length) {
+    app.append(section(L.looting, null,
+      h("ul", { class: "loot-list" }, D.lootDrops.map(function (l) {
+        var to = byId[l.to] || { idea: l.to };
+        var from = byId[l.from] || { idea: l.from };
+        return h("li", null,
+          h("div", { class: "loot-line" }, h("span", { class: "to" }, to.idea), h("span", { class: "eyebrow" }, L.looted),
+            h("span", { class: "chip loot" }, l.item, h("small", null, L.from + " " + from.idea))),
+          l.v2 ? h("p", { class: "v2" }, h("b", null, "v2 "), l.v2) : null);
+      }))));
+  }
+
+  /* The storms */
+  storms.forEach(function (s, i) {
+    var killed = fighters.filter(function (f) { return stormIndex(f.out) === i + 1; });
+    var results = (s.results || []).slice().sort(function (a, b) { return b.score - a.score; });
+    app.append(section(storms.length > 1 ? L.storm + " " + (i + 1) : L.storm, null,
+      h("div", { class: "storm-band" },
+        h("p", { class: "display storm-scenario" }, s.scenario),
+        table([L.idea, L.adapts, "", L.score], results.map(function (r) {
+          var f = byId[r.id] || { idea: r.id, id: r.id };
+          var dead = killed.indexOf(f) !== -1;
+          return h("tr", { class: dead ? "is-out" : null },
+            h("td", { class: "idea" }, h("span", { class: "letter-inline" }, f.id), f.idea),
+            h("td", null, r.adaptation),
+            h("td", { class: "nowrap" }, h("span", { class: r.verdict === "breaks" ? "chip out" : "chip storm" }, L[r.verdict] || r.verdict)),
+            h("td", { class: "nowrap" }, score(r.score)));
+        }), true),
+        killed.length ? h("ul", { class: "feed" }, killed.map(function (f) {
+          return h("li", null, h("span", { class: "chip out" }, L.out), h("span", null, h("span", { class: "who" }, f.idea), h("span", { class: "why" }, " — " + f.reason)));
+        })) : null)));
+  });
+
+  /* The final duel */
+  var d = D.duel;
+  if (d && byId[d.a] && byId[d.b]) {
+    var corner = function (id, sc, forOpp, wins) {
+      var f = byId[id];
+      var champ = d.champion === id;
+      return h("div", { class: "corner" + (champ ? " is-champion" : "") },
+        h("div", { class: "corner-head" }, h("span", { class: "eyebrow" }, f.id + " · " + f.archetype), champ ? h("span", { class: "chip gold" }, L.champion) : h("span", { class: "chip" }, L.finalist)),
+        h("h3", { class: "display" }, f.idea),
+        score(sc),
+        h("div", { class: "block" }, h("span", { class: "label" }, L.forOpponent), h("p", null, forOpp)),
+        h("div", { class: "block" }, h("span", { class: "label" }, L.stillWins), h("p", null, wins)));
+    };
+    app.append(section(L.duel, null, [
+      h("div", { class: "duel" },
+        corner(d.a, d.scoreA, d.forOpponentA, d.winsA),
+        h("span", { class: "vs", "aria-hidden": "true" }, L.vs),
+        corner(d.b, d.scoreB, d.forOpponentB, d.winsB)),
+      d.decidingFactor ? h("p", { class: "verdict-line" }, h("b", null, L.decidingFactor + ": "), d.decidingFactor) : null
+    ]));
+  }
+
+  /* Leaderboard */
+  function depthOf(f) {
+    if (f.out === null || f.out === undefined) return 100;
+    if (f.out === "final") return 50;
+    var i = stormIndex(f.out);
+    return i ? 10 + i : 0;
+  }
+  var ranked = fighters.slice().sort(function (a, b) { return depthOf(b) - depthOf(a) || best(b) - best(a); });
+  app.append(section(L.leaderboard, null,
+    table([L.rank, L.idea, L.fighter, L.outIn, L.best], ranked.map(function (f, i) {
+      var champ = f.out === null || f.out === undefined;
+      return h("tr", { class: f.out && f.out !== "final" ? "is-out" : null },
+        h("td", { class: "nowrap" }, champ ? h("span", { class: "chip gold" }, L.champion) : h("span", { class: "num" }, String(i + 1))),
+        h("td", { class: "idea" }, h("span", { class: "letter-inline" }, f.id), f.idea),
+        h("td", null, f.archetype),
+        h("td", null, champ ? L.none : stageName(f.out)),
+        h("td", { class: "nowrap" }, score(best(f))));
+    }), true)));
+
+  app.append(h("footer", null, L.footer));
+})();
+</script>
+</body>
+</html>
