@@ -16,7 +16,8 @@
   to a 2-4 word name for the tournament. Everything else renders from the data.
 
   Fighter "out" values: "round1", "storm1", "storm2", "final" (the losing
-  finalist) or null (the champion). "betCheck": "plausible" | "uncertain" |
+  finalist) or null (the champion). "round1Note" is optional: use it to say
+  when the judge rescored round 1 because the scores were too close. "betCheck": "plausible" | "uncertain" |
   "doubtful". Storm "verdict": "bends" | "breaks". Bet "risk": "high" | "medium"
   | "low". Leave "storms" empty for --quick.
 
@@ -329,6 +330,7 @@ a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold-fill);
     ],
     "bar": { "idea": "Launch on Product Hunt", "score": 5.4, "why": "A one-day spike, then nothing" }
   },
+  "round1Note": "",
   "pickedBecause": "Growth problem on no budget: the Hacker and the User's Advocate find unfair channels and real moments of need.",
   "fighters": [
     {
@@ -463,7 +465,7 @@ a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold-fill);
     arena: "The Arena", problem: "Problem", constraints: "Constraints", assumed: "assumed", dealbreakers: "Dealbreakers", rubric: "Rubric",
     drop: "The Drop", fighters: "fighters",
     plausible: "Plausible", uncertain: "Uncertain", doubtful: "Doubtful",
-    round1: "Round 1: The Attack", round1Sub: "Judged blind on the locked rubric",
+    round1: "Round 1: The Attack", round1Sub: "Judged blind on the locked rubric", trailRound1: "R1",
     idea: "Idea", fatal: "Fatal flaw", secondOrder: "Second-order", rebuttal: "Rebuttal", score: "Score",
     out: "Out", eliminated: "eliminated",
     looting: "The Looting", looted: "takes",
@@ -536,7 +538,7 @@ a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold-fill);
   }
   function scoresOf(f) {
     var trail = [];
-    if (typeof f.r1 === "number") trail.push({ stage: "R1", value: f.r1 });
+    if (typeof f.r1 === "number") trail.push({ stage: L.trailRound1, value: f.r1 });
     storms.forEach(function (s, i) {
       (s.results || []).forEach(function (r) {
         if (r.id === f.id) trail.push({ stage: storms.length > 1 ? L.stageStorm + " " + (i + 1) : L.stageStorm, value: r.score });
@@ -714,6 +716,7 @@ a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold-fill);
         h("td", null, f.rebuttal || L.none),
         h("td", { class: "nowrap" }, score(f.r1)));
     }), true),
+    D.round1Note ? h("p", { class: "assumed" }, D.round1Note) : null,
     r1Out.length ? h("ul", { class: "feed", "aria-label": L.out }, r1Out.map(function (f) {
       return h("li", null, h("span", { class: "chip out" }, L.out), h("span", null, h("span", { class: "who" }, f.idea), h("span", { class: "why" }, " — " + f.reason)));
     })) : null
