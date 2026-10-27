@@ -51,6 +51,7 @@ Options can be appended to the command or stated in plain words:
 | `--deep` | 8 fighters, an extra evolution round, and — when a subagent tool (Agent/Task) is available — each fighter runs as its own parallel subagent so the ideas are truly independent |
 | `--silent` | Show only the final verdict, not the fight log |
 | `--criteria "a, b, c"` | Use the user's own scoring criteria instead of inferring them |
+| `--with "A \| B \| C"` | Enter the user's own options as fighters, so the tournament fights out the choices they already have alongside Claude's |
 
 ## The Tournament
 
@@ -69,11 +70,34 @@ Write down, briefly:
   - Speed to first result — 15%
   - Risk (inverted: lower risk scores higher) — 15%
 
-The rubric is locked once written. Never change it later to help an idea win.
+- **Dealbreakers**: the hard constraints (illegal, over budget, needs skills the user doesn't have, breaks a stated requirement). An idea that hits a dealbreaker is eliminated on the spot, without scoring. Keep this list short; anything negotiable belongs in the rubric
+- **The Bar**: the obvious answer most people would give first, in one line, scored on the rubric. It does not fight, but the super idea must clearly beat it. If the tournament can't beat the obvious answer, say so honestly — that is a useful result too
+
+**Score calibration**, used by every judge for every criterion:
+
+| Score | Meaning |
+|---|---|
+| 1–2 | Fails this criterion; would sink the idea on its own |
+| 3–4 | Weak; a real problem that needs fixing |
+| 5–6 | Acceptable; what a competent but ordinary idea gets |
+| 7–8 | Strong; clearly better than the usual answer |
+| 9–10 | Exceptional; rare, needs a specific reason |
+
+The rubric and the calibration are locked once written. Never change them later to help an idea win.
 
 ### Phase 1 — The Drop
 
-Spawn the fighters. Each one is Claude thinking under a strict personality. Use these archetypes, in this order, taking the first N for the chosen fighter count:
+Spawn the fighters. Each one is Claude thinking under a strict personality. Pick the N archetypes from the list below:
+
+- **Always include the Pragmatist and the Contrarian**: one anchors the tournament in reality, the other guarantees at least one idea that breaks the frame
+- **Fill the other slots with the archetypes that fit the problem best**, and say in one line why you chose them. Rough guide:
+  - Growth, marketing, business: Hacker, User's Advocate, Systems Thinker, Minimalist
+  - Product and feature design: User's Advocate, Minimalist, Visionary, Alchemist
+  - Technical and architecture choices: Minimalist, Skeptic, Systems Thinker, Visionary
+  - Names, writing, creative work: Alchemist, Wildcard, Visionary, User's Advocate
+  - Personal decisions: Skeptic, User's Advocate, Minimalist, Visionary
+
+The archetypes:
 
 1. **The Pragmatist** — the most reliable path with what exists today. Proven, boring, effective.
 2. **The Visionary** — the 10x moonshot. Ignores current limits and asks what would make the problem disappear entirely.
@@ -93,6 +117,10 @@ Each fighter writes a pitch:
 - **Why it wins** (its strongest argument)
 - **First move** (the very first concrete action)
 
+For creative problems (names, titles, slogans, plots), adapt the pitch: the idea is the candidate itself plus two variants, "why it wins" is how it lands with the audience, and "first move" becomes **how to test it** (say it out loud, check the domain and trademark, show it to five people).
+
+**User's contenders (with `--with`):** each option the user gave enters as a fighter labeled "User's pick", counting toward N. Write its pitch in its strongest possible form — steelman it, never strawman it so Claude's ideas look better.
+
 **Diversity rule:** before moving on, compare the pitches. If two ideas are basically the same approach with different words, the weaker one must re-pitch something genuinely different. Collapse into sameness is the main failure mode of this skill; guard against it.
 
 **Independence (with `--deep`):** if a subagent tool is available, launch one subagent per fighter in parallel, giving each only the arena (problem, constraints) and its archetype — not the other pitches. Collect the pitches, then run the rest of the tournament yourself. Without subagents, write each pitch as if the others did not exist.
@@ -103,15 +131,17 @@ For each idea:
 
 - The **red team** (Claude as a ruthless critic with no stake in any fighter) writes the single most damaging objection: the real reason this would fail
 - The fighter gets **one rebuttal** — it may defend, or patch the idea
-- The **judge** scores the idea, after the rebuttal, on each rubric criterion from 1 to 10, then computes the weighted total out of 10
+- The **judge** scores the idea, after the rebuttal, on each rubric criterion from 1 to 10 using the calibration table, then computes the weighted total out of 10
 
 **Judging rules:**
-- Score against the rubric, not against your taste
-- No favoritism toward the "safe" fighter or the "flashy" one
+- **Judge blind**: refer to the ideas by letter (A, B, C…) while scoring, not by archetype, so "the safe one" or "the flashy one" gets no bonus. Reveal the fighters after the scores are written
+- Score against the rubric and the calibration, not against your taste
 - A patch in the rebuttal counts only if it really fixes the objection
+- **Check the spread**: if every total sits within 1.5 points of the others, the judge is being polite. Re-read the calibration and rescore; real ideas are not all "a 7"
+- With `--deep` and a subagent tool, hand the judging to one separate subagent that sees only the arena, the rubric, the calibration and the anonymized pitches, objections and rebuttals
 - Show scores in a table
 
-**Elimination:** the bottom half is eliminated (round down, keep at least 2 survivors). Each eliminated fighter gets one line: why it lost.
+**Elimination:** the bottom half is eliminated (round down, keep at least 2 survivors). Ties are broken by Feasibility, then by Risk. Each eliminated fighter gets one line: why it lost.
 
 ### Phase 3 — The Looting
 
@@ -133,11 +163,18 @@ Forge the **super idea**: the champion, upgraded with the best remaining loot fr
 
 Then run a **pre-mortem**: "It is six months later and the super idea failed. Why?" List the 3 most likely causes and, for each, a concrete safeguard. Fold critical safeguards back into the idea.
 
-Finally, score the super idea on the rubric. It should beat the champion; if it doesn't, the fusion added noise — strip it back to the champion plus only the loot that raised the score.
+Finally, score the super idea on the rubric. Every criterion that scores higher than the champion's must name the piece of loot or safeguard that earned the point; an increase with no reason is inflation, so drop it. The super idea should beat the champion; if it doesn't, the fusion added noise — strip it back to the champion plus only the loot that raised the score. Compare it with The Bar as well.
 
 ### Phase 6 — The Verdict
 
-Present the result to the user. Reply in the user's language.
+Before presenting, check quickly:
+
+- The super idea is one coherent idea, explainable in one sentence
+- It beats The Bar, or the verdict says plainly that it doesn't
+- The first 3 moves are concrete enough to start today, not "do research"
+- No fighter crossed a dealbreaker or proposed anything illegal or unethical
+
+Then present the result to the user. Reply in the user's language, and translate the headings of the output format too.
 
 ## Output Format
 
@@ -150,6 +187,8 @@ Unless `--silent` is set, show the fight log compactly, then the verdict. Keep t
 **Problem:** ...
 **Constraints:** ... (assumptions marked)
 **Rubric:** Impact 30% · Feasibility 25% · Originality 15% · Speed 15% · Risk 15%
+**Dealbreakers:** ...
+**The Bar:** [the obvious answer] — 6.0/10
 
 ## The Drop — 6 fighters
 | # | Fighter | Idea | In one line |
@@ -188,7 +227,11 @@ Unless `--silent` is set, show the fight log compactly, then the verdict. Keep t
 - Risk → safeguard
 - Risk → safeguard
 
-**Final score:** 8.6/10 (champion alone: 7.8)
+**Final score:** 8.6/10 (champion alone: 7.8 · The Bar: 6.0)
+
+**Confidence:** High / Medium / Low — and why
+
+**What would change the verdict:** the one fact that, if it turned out true, would put the runner-up ahead
 
 **Your first 3 moves:**
 1. Today: ...
@@ -211,6 +254,8 @@ Unless `--silent` is set, show the fight log compactly, then the verdict. Keep t
 **Problem:** Acquire the first 100 active users with no marketing budget.
 **Constraints:** Solo founder, ~5h/week, app already live (assumed: iOS + Android).
 **Rubric:** Impact 30% · Feasibility 30% · Speed 25% · Originality 15%
+**Dealbreakers:** paid ads, anything needing more than 5h/week
+**The Bar:** "Post on Product Hunt" — 5.4/10 (one-day spike, then nothing)
 
 ## The Drop — 4 fighters
 | # | Fighter | Idea | In one line |
@@ -253,6 +298,7 @@ Newsletter v2 (8.1) vs Reddit (6.9) — **Champion: Newsletter v2**, because it 
 - Give constraints up front ("solo", "no budget", "must ship in 2 weeks") — they make the judging sharper
 - Use `--criteria` when you know what matters most to you; the default rubric is generic
 - Use `--deep` for big decisions; the independent subagent fighters produce noticeably more diverse ideas
+- Use `--with` when you are already torn between a few options: they fight Claude's ideas on equal terms, and you see exactly where each one breaks
 - If you dislike the winner, say why — Claude can rerun the tournament with that as a new constraint, and the runner-up may take the crown
 - The log is the value too: the eliminated ideas and their loot often contain the second-best move
 
